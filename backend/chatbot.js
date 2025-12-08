@@ -87,11 +87,9 @@ function botReply(input) {
 function processInput(input) {
     input = input.toLowerCase();
 
-    // Respond to questions about the museum's name
     if (input.includes("name of the museum")) {
         return `We are called the ${museumInfo.name}.`;
     }
-    // Respond to questions about museum hours
     else if (input.includes("open on tuesday")) {
         return `The museum is open on Tuesdays from ${museumInfo.museum_hours.tuesday}.`;
     }
