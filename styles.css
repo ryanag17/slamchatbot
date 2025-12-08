@@ -12,12 +12,14 @@ body {
 
 #chat-container {
     width: 90%;
-    max-width: 1100px;  /* Increased container width */
-    height: 700px;  /* Increased container height */
+    max-width: 1100px;  /* Larger container */
+    height: 600px;  /* Adjusted container height */
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Header adjustments */
@@ -28,9 +30,9 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 15px 20px;  /* Adjusted padding */
+    padding: 15px 20px;
     border-bottom: 2px solid #ccc;
-    margin-bottom: 10px;  /* Allowing more space for content */
+    margin-bottom: 0;
 }
 
 #logo {
@@ -100,14 +102,16 @@ h1 {
 
 /* Messages container */
 #messages-container {
-    display: none;
+    display: flex;
+    flex-direction: column;
     padding: 20px;
-    max-height: 500px;  /* Adjusted height for content */
+    max-height: 400px;  /* Adjusted height to avoid excessive white space */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
-    margin-bottom: 0;  /* Removed the extra margin at the bottom */
+    flex-grow: 1;  /* Allow the chat to grow */
+    margin-bottom: 0;
 }
 
 /* Chat area inside the message container */
@@ -151,7 +155,7 @@ h1 {
 .chat-message {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 20px;  /* Reduced space between messages */
+    margin-bottom: 20px;  /* Fixed space between messages */
 }
 
 .chat-message .message-bubble {
