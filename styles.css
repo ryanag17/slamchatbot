@@ -11,8 +11,8 @@ body {
 }
 
 #chat-container {
-    width: 80%;
-    max-width: 800px;
+    width: 90%;
+    max-width: 1000px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -25,12 +25,12 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 30px 20px; /* Increased padding to give more room for the logo */
+    padding: 40px 20px; /* Increased padding to fit larger logo */
     border-bottom: 2px solid #ccc;
 }
 
 #logo {
-    height: 60px; /* Adjusted logo size */
+    height: 80px; /* Adjust the logo size to fit the header properly */
     margin-right: 10px;
 }
 

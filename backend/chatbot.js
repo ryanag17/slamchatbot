@@ -59,6 +59,7 @@ document.getElementById("send-btn").addEventListener("click", function() {
         botReply(userInput);     // Let the bot respond
     }
     document.getElementById("user-input").value = ""; // Clear the input field
+    document.getElementById("chat-window").classList.remove("hidden"); // Show the chat window
 });
 
 // Function to handle user messages
@@ -99,7 +100,13 @@ function botReply(input) {
 // Function to process input and provide relevant response
 function processInput(input) {
     input = input.toLowerCase();
-    if (input.includes("hours") || input.includes("open")) {
+
+    // Simple responses to greetings
+    if (input.includes("hello") || input.includes("hi") || input.includes("hey")) {
+        return "Hello! How can I assist you today?";
+    }
+    // Respond to questions about the museum's hours
+    else if (input.includes("hours") || input.includes("open")) {
         return getMuseumHours();
     } else if (input.includes("location")) {
         return museumInfo.location_description;
