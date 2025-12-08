@@ -26,7 +26,7 @@ function initializeChat() {
 
 // Function to handle user messages
 function userMessage(message) {
-    let timestamp = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });  // MM/DD/YYYY, HH:MM AM/PM
+    let timestamp = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     let messageHtml = `
         <div class="chat-message user-message">
             <div class="message-bubble user-bubble">
@@ -42,8 +42,8 @@ function userMessage(message) {
 
 // Function to handle bot replies
 function botReply(input) {
-    let response = processInput(input);  // Process the user input and generate response
-    let timestamp = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }); // MM/DD/YYYY, HH:MM AM/PM
+    let response = processInput(input);
+    let timestamp = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     let messageHtml = `
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">
@@ -57,7 +57,7 @@ function botReply(input) {
     animateMessage();
 }
 
-// Function to process user input and provide relevant response
+// Process user input and provide a response
 function processInput(input) {
     input = input.toLowerCase();
 
@@ -99,5 +99,29 @@ function animateMessage() {
     newMessage.classList.add('fade-in');
 }
 
-// Load JSON data on page load
+// Initialize chatbot interaction when user sends a message
+document.getElementById("send-btn").addEventListener("click", function() {
+    let userInput = document.getElementById("user-input").value;
+    if (userInput.trim() !== "") {
+        userMessage(userInput);
+        botReply(userInput);
+        document.getElementById("user-input").value = ""; 
+        document.getElementById("welcome-container").style.display = 'none'; 
+        document.getElementById("messages-container").style.display = 'block';
+    }
+});
+
+document.getElementById("user-input").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        let userInput = document.getElementById("user-input").value;
+        if (userInput.trim() !== "") {
+            userMessage(userInput);
+            botReply(userInput);
+            document.getElementById("user-input").value = ""; 
+            document.getElementById("welcome-container").style.display = 'none'; 
+            document.getElementById("messages-container").style.display = 'block';
+        }
+    }
+});
+
 window.onload = loadJSONData;
