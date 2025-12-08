@@ -1,22 +1,38 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SLAM Chatbot</title>
-    <link rel="stylesheet" href="style.css"> <!-- style.css in the same folder -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="chatbot-container">
-        <div id="chatbox">
+    <div id="chat-container">
+        <!-- Header with logo and title -->
+        <header>
+            <img src="SLAM_logo.svg" alt="SLAM Logo" id="logo">
+            <h1>SLAM Chatbot</h1>
+        </header>
+
+        <!-- Welcome message area -->
+        <div id="welcome-container" class="centered">
+            <h2>Welcome to the SLAM Chatbot</h2>
+            <p>What peaks your curiosity today?</p>
+            <div id="input-container">
+                <input type="text" id="user-input" placeholder="Ask me anything about SLAM..." />
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+
+        <!-- Chat window (hidden until user starts chatting) -->
+        <div id="chat-window" class="hidden">
             <div id="chat-area"></div>
-            <input type="text" id="user-input" placeholder="Ask me anything about SLAM..." />
-            <button id="send-btn">Send</button>
+            <div id="upload-container">
+                <input type="file" id="image-upload" accept="image/*" />
+            </div>
         </div>
     </div>
 
-    <!-- Link to chatbot.js in the backend folder -->
-    <script src="../backend/chatbot.js"></script>
+    <script src="backend/chatbot.js"></script>
 </body>
 </html>

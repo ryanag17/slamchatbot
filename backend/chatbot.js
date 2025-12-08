@@ -1,5 +1,3 @@
-// chatbot.js
-
 // Define variables to store the JSON data
 let museumInfo = {};
 let slamArt = [];
@@ -37,7 +35,14 @@ function loadJSONData() {
 
 // Initialize chat interface after JSON data is loaded
 function initializeChat() {
-    document.getElementById("chat-area").innerHTML = `<div class="bot-message">${greeting}</div>`;
+    // Show the welcome message
+    document.getElementById("chat-area").innerHTML = `<div class="chat-message bot-message">
+                                                        <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
+                                                        <div class="message-bubble bot-bubble">
+                                                            ${greeting}
+                                                            <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                                                        </div>
+                                                     </div>`;
 
     // Event listener for send button
     document.getElementById("send-btn").addEventListener("click", function() {
@@ -52,16 +57,34 @@ function initializeChat() {
 
 // Function to handle user messages
 function userMessage(message) {
-    let userMessageHtml = `<div class="user-message">${message}</div>`;
-    document.getElementById("chat-area").innerHTML += userMessageHtml;
+    let timestamp = new Date().toLocaleTimeString();
+    let messageHtml = `
+        <div class="chat-message user-message">
+            <img src="user-profile-pic.jpg" class="profile-pic" alt="User">
+            <div class="message-bubble user-bubble">
+                ${message}
+                <div class="timestamp">${timestamp}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById("chat-area").innerHTML += messageHtml;
     scrollChatToBottom();
 }
 
 // Function to handle bot replies
 function botReply(input) {
     let response = processInput(input);
-    let botMessageHtml = `<div class="bot-message">${response}</div>`;
-    document.getElementById("chat-area").innerHTML += botMessageHtml;
+    let timestamp = new Date().toLocaleTimeString();
+    let messageHtml = `
+        <div class="chat-message bot-message">
+            <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
+            <div class="message-bubble bot-bubble">
+                ${response}
+                <div class="timestamp">${timestamp}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById("chat-area").innerHTML += messageHtml;
     scrollChatToBottom();
 }
 
