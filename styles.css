@@ -12,8 +12,8 @@ body {
 
 #chat-container {
     width: 90%;
-    max-width: 1000px;
-    height: 600px; /* Adjusted height for the chat container */
+    max-width: 1100px;  /* Increased container width */
+    height: 700px;  /* Increased container height */
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -28,9 +28,9 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 15px 20px;  /* Reduced padding for the header */
+    padding: 15px 20px;  /* Adjusted padding */
     border-bottom: 2px solid #ccc;
-    margin-bottom: 10px;  /* Make room for the container to grow */
+    margin-bottom: 10px;  /* Allowing more space for content */
 }
 
 #logo {
@@ -102,13 +102,12 @@ h1 {
 #messages-container {
     display: none;
     padding: 20px;
-    max-height: 450px;  /* Reduced height for content */
+    max-height: 500px;  /* Adjusted height for content */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
-    margin-bottom: 30px;  /* Added more space */
-    padding-bottom: 50px; /* Ensure enough space for input at the bottom */
+    margin-bottom: 0;  /* Removed the extra margin at the bottom */
 }
 
 /* Chat area inside the message container */
@@ -152,7 +151,7 @@ h1 {
 .chat-message {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 25px;  /* Increased space between messages */
+    margin-bottom: 20px;  /* Reduced space between messages */
 }
 
 .chat-message .message-bubble {
@@ -170,18 +169,18 @@ h1 {
     color: white;
     align-self: flex-end;
     margin-left: auto;
-    padding-right: 20px;  /* Ensure padding on the right */
+    padding-right: 20px;  /* Fixed padding for user bubbles */
 }
 
 /* Adjusting bot (blue) message bubbles */
 .bot-bubble {
     background-color: #3498db;  /* Blue for bot responses */
     color: white;
-    padding-left: 20px;  /* Ensure padding on the left */
+    padding-left: 20px;  /* Fixed padding for bot bubbles */
 }
 
 .timestamp {
-    font-size: 14px;
+    font-size: 12px;
     color: #7F8C8D;
     position: absolute;
     bottom: -25px;  /* More space between bubble and timestamp */
