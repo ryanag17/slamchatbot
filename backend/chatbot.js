@@ -35,6 +35,11 @@ function loadJSONData() {
 
 // Initialize chat interface after JSON data is loaded
 function initializeChat() {
+    // Hide the welcome message and show the chat window
+    document.getElementById("welcome-container").classList.add("hidden");
+    document.getElementById("chat-window").classList.remove("hidden");
+
+    // Show the greeting message
     document.getElementById("chat-area").innerHTML = `
         <div class="chat-message bot-message">
             <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
@@ -44,17 +49,16 @@ function initializeChat() {
             </div>
         </div>
     `;
-    document.getElementById("chat-window").classList.remove('hidden');
 }
 
 // Event listener for send button
 document.getElementById("send-btn").addEventListener("click", function() {
     let userInput = document.getElementById("user-input").value;
     if (userInput.trim() !== "") {
-        userMessage(userInput);
-        botReply(userInput);
+        userMessage(userInput);  // Display the user's message
+        botReply(userInput);     // Let the bot respond
     }
-    document.getElementById("user-input").value = "";
+    document.getElementById("user-input").value = ""; // Clear the input field
 });
 
 // Function to handle user messages

@@ -25,12 +25,12 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 20px;
+    padding: 30px 20px; /* Increased padding to give more room for the logo */
     border-bottom: 2px solid #ccc;
 }
 
 #logo {
-    height: 40px;
+    height: 60px; /* Adjusted logo size */
     margin-right: 10px;
 }
 
