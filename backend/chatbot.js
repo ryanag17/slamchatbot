@@ -33,6 +33,7 @@ document.getElementById("send-btn").addEventListener("click", function() {
         botReply(userInput);     // Let the bot respond
     }
     document.getElementById("user-input").value = ""; // Clear the input field
+    document.getElementById("chat-window").classList.remove("hidden"); // Show the chat window
 });
 
 // Allow sending messages by pressing Enter
