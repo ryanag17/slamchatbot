@@ -19,24 +19,32 @@ body {
     overflow: hidden;
 }
 
+/* Header adjustments */
 header {
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Stack logo and title vertically */
+    align-items: center;  /* Center the logo and title horizontally */
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 40px 20px; /* Increased padding to fit larger logo */
+    padding: 20px 20px;  /* Adjust padding to fit */
     border-bottom: 2px solid #ccc;
+    max-width: 100%;
+    text-align: center;  /* Center text */
 }
 
+/* Logo adjustments */
 #logo {
-    height: 80px; /* Adjust the logo size to fit the header properly */
-    margin-right: 10px;
+    height: 35px;  /* Reduced logo size */
+    margin-bottom: 10px;  /* Space between logo and title */
+    max-width: 100%;  /* Prevents the logo from overflowing */
 }
 
+/* Title adjustments */
 h1 {
-    font-size: 24px;
+    font-size: 24px;  /* Font size for title */
     margin: 0;
+    white-space: nowrap;  /* Prevents the title from wrapping */
 }
 
 #welcome-container {
@@ -110,34 +118,32 @@ h1 {
     display: none;
 }
 
-/* Messenger view */
+/* Messenger view adjustments */
 .chat-message {
     display: flex;
     align-items: flex-start;
     margin-bottom: 15px;
-    transition: transform 0.3s ease-in-out;
-}
-
-.chat-message:hover {
-    transform: scale(1.05);
 }
 
 .chat-message .message-bubble {
     padding: 15px;
     border-radius: 10px;
     font-size: 16px;
-    background-color: #3498db;
-    color: white;
     max-width: 70%;
     word-wrap: break-word;
     position: relative;
 }
 
 .user-bubble {
-    background-color: #4CAF50;
+    background-color: #4CAF50;  /* Green color for user messages */
     color: white;
     align-self: flex-end;
     margin-left: auto;
+}
+
+.bot-bubble {
+    background-color: #3498db;  /* Blue color for bot messages */
+    color: white;
 }
 
 .timestamp {
@@ -183,5 +189,13 @@ h1 {
 
     .chat-message .message-bubble {
         max-width: 80%;
+    }
+
+    #logo {
+        height: 30px;  /* Reduce logo size on smaller screens */
+    }
+
+    h1 {
+        font-size: 20px;  /* Adjust title size for smaller screens */
     }
 }
