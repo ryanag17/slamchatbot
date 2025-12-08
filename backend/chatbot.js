@@ -18,7 +18,7 @@ function initializeChat() {
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">
                 ${greeting}
-                <div class="timestamp">${new Date().toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                <div class="timestamp">${new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}</div>
             </div>
         </div>
     `;
@@ -26,7 +26,7 @@ function initializeChat() {
 
 // Function to handle user messages
 function userMessage(message) {
-    let timestamp = new Date().toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' }); // Includes day
+    let timestamp = new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });  // MM/DD/YYYY, HH:MM AM/PM
     let messageHtml = `
         <div class="chat-message user-message">
             <div class="message-bubble user-bubble">
@@ -43,7 +43,7 @@ function userMessage(message) {
 // Function to handle bot replies
 function botReply(input) {
     let response = processInput(input);  // Process the user input and generate response
-    let timestamp = new Date().toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' }); // Includes day
+    let timestamp = new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }); // MM/DD/YYYY, HH:MM AM/PM
     let messageHtml = `
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">

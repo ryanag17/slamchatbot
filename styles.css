@@ -13,7 +13,7 @@ body {
 #chat-container {
     width: 90%;
     max-width: 1000px;
-    height: 500px; /* Fixed height for the chat container */
+    height: 600px; /* Adjusted height for the chat container */
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -28,8 +28,9 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 20px 20px;
+    padding: 15px 20px;  /* Reduced padding for the header */
     border-bottom: 2px solid #ccc;
+    margin-bottom: 10px;  /* Make room for the container to grow */
 }
 
 #logo {
@@ -101,12 +102,13 @@ h1 {
 #messages-container {
     display: none;
     padding: 20px;
-    max-height: 350px; /* Fixed height for the chat content */
+    max-height: 450px;  /* Reduced height for content */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
-    margin-bottom: 20px;
+    margin-bottom: 30px;  /* Added more space */
+    padding-bottom: 50px; /* Ensure enough space for input at the bottom */
 }
 
 /* Chat area inside the message container */
@@ -168,14 +170,14 @@ h1 {
     color: white;
     align-self: flex-end;
     margin-left: auto;
-    padding-right: 20px;  /* Add padding to the right to align the bubble */
+    padding-right: 20px;  /* Ensure padding on the right */
 }
 
 /* Adjusting bot (blue) message bubbles */
 .bot-bubble {
     background-color: #3498db;  /* Blue for bot responses */
     color: white;
-    padding-left: 20px;  /* Add padding to the left to align the bubble */
+    padding-left: 20px;  /* Ensure padding on the left */
 }
 
 .timestamp {
