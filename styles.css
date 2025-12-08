@@ -23,9 +23,10 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #2C3E50;
+    background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
     padding: 20px;
+    border-bottom: 2px solid #ccc;
 }
 
 #logo {
@@ -57,36 +58,44 @@ h1 {
 #input-container {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 15px;
+    margin-top: 20px;
 }
 
 #user-input {
     width: 70%;
-    padding: 10px;
+    padding: 12px;
     font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    border-radius: 30px;
+    border: 2px solid #ccc;
+    transition: border 0.3s ease-in-out;
+}
+
+#user-input:focus {
+    border-color: #3498db;
+    outline: none;
 }
 
 #send-btn {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 16px;
-    background-color: #4CAF50;
+    background-color: #3498db;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 30px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 #send-btn:hover {
-    background-color: #45a049;
+    background-color: #2c8ec7;
 }
 
 #chat-window {
     display: none;
     padding: 20px;
     overflow-y: auto;
-    height: 400px;
+    max-height: 400px;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
 }
@@ -106,21 +115,20 @@ h1 {
     display: flex;
     align-items: flex-start;
     margin-bottom: 15px;
-    max-width: 80%;
+    transition: transform 0.3s ease-in-out;
 }
 
-.chat-message .profile-pic {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
+.chat-message:hover {
+    transform: scale(1.05);
 }
 
 .chat-message .message-bubble {
     padding: 15px;
     border-radius: 10px;
     font-size: 16px;
-    max-width: 60%;
+    background-color: #3498db;
+    color: white;
+    max-width: 70%;
     word-wrap: break-word;
     position: relative;
 }
@@ -132,11 +140,6 @@ h1 {
     margin-left: auto;
 }
 
-.bot-bubble {
-    background-color: #3498db;
-    color: white;
-}
-
 .timestamp {
     font-size: 12px;
     color: #7F8C8D;
@@ -145,9 +148,19 @@ h1 {
     right: 10px;
 }
 
-/* Hidden elements for transition */
 .hidden {
     display: none;
+}
+
+.chat-message.fade-in {
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
 }
 
 /* Make sure chat window adjusts properly on smaller screens */

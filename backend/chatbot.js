@@ -9,15 +9,15 @@ let greeting = "Hello! I’m your friendly SLAM chatbot. How can I assist you to
 
 // Fetch the JSON files
 function loadJSONData() {
-    fetch('./data/museum_info.json')  // Correct path relative to backend folder
+    fetch('./data/museum_info.json')  
         .then(response => response.json())
         .then(data => {
-            museumInfo = data; // Store the data in museumInfo
-            initializeChat(); // Once data is loaded, initialize the chat
+            museumInfo = data; 
+            initializeChat();
         })
         .catch(error => console.error("Error loading museum_info.json:", error));
 
-    fetch('./data/slam_art.json')  // Correct path for other JSON files
+    fetch('./data/slam_art.json') 
         .then(response => response.json())
         .then(data => slamArt = data)
         .catch(error => console.error("Error loading slam_art.json:", error));
@@ -35,25 +35,27 @@ function loadJSONData() {
 
 // Initialize chat interface after JSON data is loaded
 function initializeChat() {
-    // Show the welcome message
-    document.getElementById("chat-area").innerHTML = `<div class="chat-message bot-message">
-                                                        <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
-                                                        <div class="message-bubble bot-bubble">
-                                                            ${greeting}
-                                                            <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-                                                        </div>
-                                                     </div>`;
-
-    // Event listener for send button
-    document.getElementById("send-btn").addEventListener("click", function() {
-        let userInput = document.getElementById("user-input").value;
-        if (userInput.trim() !== "") {
-            userMessage(userInput);
-            botReply(userInput);
-        }
-        document.getElementById("user-input").value = "";
-    });
+    document.getElementById("chat-area").innerHTML = `
+        <div class="chat-message bot-message">
+            <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
+            <div class="message-bubble bot-bubble">
+                ${greeting}
+                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById("chat-window").classList.remove('hidden');
 }
+
+// Event listener for send button
+document.getElementById("send-btn").addEventListener("click", function() {
+    let userInput = document.getElementById("user-input").value;
+    if (userInput.trim() !== "") {
+        userMessage(userInput);
+        botReply(userInput);
+    }
+    document.getElementById("user-input").value = "";
+});
 
 // Function to handle user messages
 function userMessage(message) {
@@ -69,6 +71,7 @@ function userMessage(message) {
     `;
     document.getElementById("chat-area").innerHTML += messageHtml;
     scrollChatToBottom();
+    animateMessage();
 }
 
 // Function to handle bot replies
@@ -86,6 +89,7 @@ function botReply(input) {
     `;
     document.getElementById("chat-area").innerHTML += messageHtml;
     scrollChatToBottom();
+    animateMessage();
 }
 
 // Function to process input and provide relevant response
@@ -150,6 +154,12 @@ function getFloorLocations(input) {
 function scrollChatToBottom() {
     let chatArea = document.getElementById("chat-area");
     chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// Function to add fade-in effect to messages
+function animateMessage() {
+    const newMessage = document.querySelector('.chat-message:last-child');
+    newMessage.classList.add('fade-in');
 }
 
 // Load JSON data on page load
