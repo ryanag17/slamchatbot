@@ -13,6 +13,7 @@ body {
 #chat-container {
     width: 90%;
     max-width: 1000px;
+    height: 500px; /* Fixed height for the chat container */
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -100,15 +101,15 @@ h1 {
 #messages-container {
     display: none;
     padding: 20px;
-    max-height: 500px;
+    max-height: 350px; /* Fixed height for the chat content */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
-    margin-bottom: 20px;  /* Extra space to separate from the input */
+    margin-bottom: 20px;
 }
 
-/* Ensure scrollbar shows up */
+/* Chat area inside the message container */
 #chat-area {
     padding-right: 15px; /* Space for the scrollbar */
     margin-bottom: 10px;
@@ -149,7 +150,7 @@ h1 {
 .chat-message {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 25px;  /* Increase space between messages */
+    margin-bottom: 25px;  /* Increased space between messages */
 }
 
 .chat-message .message-bubble {
@@ -161,24 +162,27 @@ h1 {
     position: relative;
 }
 
+/* Adjusting user (green) message bubbles */
 .user-bubble {
     background-color: #4CAF50;  /* Green for user messages */
     color: white;
     align-self: flex-end;
     margin-left: auto;
-    max-width: calc(100% - 50px);  /* Prevent cutting off on right */
+    padding-right: 20px;  /* Add padding to the right to align the bubble */
 }
 
+/* Adjusting bot (blue) message bubbles */
 .bot-bubble {
     background-color: #3498db;  /* Blue for bot responses */
     color: white;
+    padding-left: 20px;  /* Add padding to the left to align the bubble */
 }
 
 .timestamp {
-    font-size: 14px;  /* Slightly larger for better readability */
+    font-size: 14px;
     color: #7F8C8D;
     position: absolute;
-    bottom: -25px;  /* More space between the bubble and timestamp */
+    bottom: -25px;  /* More space between bubble and timestamp */
     right: 10px;
 }
 
