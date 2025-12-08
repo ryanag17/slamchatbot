@@ -33,7 +33,6 @@ document.getElementById("send-btn").addEventListener("click", function() {
         botReply(userInput);     // Let the bot respond
     }
     document.getElementById("user-input").value = ""; // Clear the input field
-    document.getElementById("chat-window").classList.remove("hidden"); // Show the chat window
 });
 
 // Allow sending messages by pressing Enter
@@ -94,29 +93,13 @@ function processInput(input) {
     // Respond to questions about museum hours
     else if (input.includes("open on tuesday")) {
         return `The museum is open on Tuesdays from ${museumInfo.museum_hours.tuesday}.`;
-    } else if (input.includes("open on wednesday")) {
-        return `The museum is open on Wednesdays from ${museumInfo.museum_hours.wednesday}.`;
-    } else if (input.includes("open on thursday")) {
-        return `The museum is open on Thursdays from ${museumInfo.museum_hours.thursday}.`;
-    } else if (input.includes("open on friday")) {
-        return `The museum is open on Fridays from ${museumInfo.museum_hours.friday}.`;
-    } else if (input.includes("open on saturday")) {
-        return `The museum is open on Saturdays from ${museumInfo.museum_hours.saturday}.`;
-    } else if (input.includes("open on sunday")) {
-        return `The museum is open on Sundays from ${museumInfo.museum_hours.sunday}.`;
     }
-    // Respond to questions about free parking
     else if (input.includes("free parking")) {
         return museumInfo.parking.free;
     }
-    // Respond to general questions about the museum
     else if (input.includes("location")) {
         return `We are located at: ${museumInfo.location}.`;
     }
-    else if (input.includes("history")) {
-        return museumInfo.history;
-    }
-    // Handle undefined input
     else {
         return "I'm sorry, I didn't understand that. Can you please rephrase your question?";
     }
