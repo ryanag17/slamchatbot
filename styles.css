@@ -105,6 +105,13 @@ h1 {
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
+    margin-bottom: 20px;  /* Extra space to separate from the input */
+}
+
+/* Ensure scrollbar shows up */
+#chat-area {
+    padding-right: 15px; /* Space for the scrollbar */
+    margin-bottom: 10px;
 }
 
 #message-input-container {
@@ -142,7 +149,7 @@ h1 {
 .chat-message {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 25px;  /* Increase space between messages */
 }
 
 .chat-message .message-bubble {
@@ -159,6 +166,7 @@ h1 {
     color: white;
     align-self: flex-end;
     margin-left: auto;
+    max-width: calc(100% - 50px);  /* Prevent cutting off on right */
 }
 
 .bot-bubble {
@@ -167,17 +175,33 @@ h1 {
 }
 
 .timestamp {
-    font-size: 12px;
+    font-size: 14px;  /* Slightly larger for better readability */
     color: #7F8C8D;
     position: absolute;
-    bottom: -20px;
+    bottom: -25px;  /* More space between the bubble and timestamp */
     right: 10px;
 }
 
+/* Hide the messages container by default */
 .hidden {
     display: none;
 }
 
+/* Scrollbar style for web and mobile */
+#messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#messages-container::-webkit-scrollbar-thumb {
+    background-color: #3498db;
+    border-radius: 10px;
+}
+
+#messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Fade-in effect for new messages */
 .chat-message.fade-in {
     opacity: 0;
     animation: fadeIn 0.5s forwards;
