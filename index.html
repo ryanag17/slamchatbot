@@ -24,15 +24,19 @@
             </div>
         </div>
 
-        <!-- Chat window (hidden until user starts chatting) -->
-        <div id="chat-window" class="hidden">
+        <!-- Chat window where conversation happens (hidden initially) -->
+        <div id="messages-container" class="hidden">
             <div id="chat-area"></div>
+            <div id="message-input-container">
+                <input type="text" id="user-message-input" placeholder="Ask me another question..." />
+                <button id="send-message-btn">Send</button>
+            </div>
         </div>
     </div>
 
     <script src="backend/chatbot.js"></script>
     <script>
-        // Event listener for send button
+        // Event listener for sending the first message
         document.getElementById("send-btn").addEventListener("click", function() {
             let userInput = document.getElementById("user-input").value;
             if (userInput.trim() !== "") {
@@ -40,8 +44,8 @@
                 botReply(userInput);     // Let the bot respond
             }
             document.getElementById("user-input").value = ""; // Clear the input field
-            document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome container
-            document.getElementById("chat-window").classList.remove("hidden"); // Show chat window
+            document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome screen
+            document.getElementById("messages-container").classList.remove("hidden"); // Show chat area
         });
 
         // Allow sending messages by pressing Enter
@@ -53,8 +57,30 @@
                     botReply(userInput);     // Let the bot respond
                 }
                 document.getElementById("user-input").value = ""; // Clear the input field
-                document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome container
-                document.getElementById("chat-window").classList.remove("hidden"); // Show chat window
+                document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome screen
+                document.getElementById("messages-container").classList.remove("hidden"); // Show chat area
+            }
+        });
+
+        // Event listener for sending further messages
+        document.getElementById("send-message-btn").addEventListener("click", function() {
+            let userInput = document.getElementById("user-message-input").value;
+            if (userInput.trim() !== "") {
+                userMessage(userInput);  // Display the user's message
+                botReply(userInput);     // Let the bot respond
+            }
+            document.getElementById("user-message-input").value = ""; // Clear the input field
+        });
+
+        // Allow sending further messages by pressing Enter
+        document.getElementById("user-message-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                let userInput = document.getElementById("user-message-input").value;
+                if (userInput.trim() !== "") {
+                    userMessage(userInput);  // Display the user's message
+                    botReply(userInput);     // Let the bot respond
+                }
+                document.getElementById("user-message-input").value = ""; // Clear the input field
             }
         });
     </script>

@@ -97,7 +97,7 @@ h1 {
 }
 
 /* Chat window adjustments */
-#chat-window {
+#messages-container {
     display: none;
     padding: 20px;
     overflow-y: auto;

@@ -24,29 +24,6 @@ function initializeChat() {
     `;
 }
 
-// Event listener for send button
-document.getElementById("send-btn").addEventListener("click", function() {
-    let userInput = document.getElementById("user-input").value;
-    if (userInput.trim() !== "") {
-        userMessage(userInput);  // Display the user's message
-        botReply(userInput);     // Let the bot respond
-    }
-    document.getElementById("user-input").value = ""; // Clear the input field
-    document.getElementById("chat-window").classList.remove("hidden"); // Show the chat window
-});
-
-// Allow sending messages by pressing Enter
-document.getElementById("user-input").addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        let userInput = document.getElementById("user-input").value;
-        if (userInput.trim() !== "") {
-            userMessage(userInput);  // Display the user's message
-            botReply(userInput);     // Let the bot respond
-        }
-        document.getElementById("user-input").value = ""; // Clear the input field
-    }
-});
-
 // Function to handle user messages
 function userMessage(message) {
     let timestamp = new Date().toLocaleTimeString();
