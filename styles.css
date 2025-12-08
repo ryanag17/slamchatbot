@@ -100,20 +100,20 @@ h1 {
     background-color: #2c8ec7;
 }
 
-/* Messages container */
+/* Messages container (second container) */
 #messages-container {
     display: flex;
     flex-direction: column;
     padding: 20px;
-    height: 100%;  /* Ensure container takes full height */
+    height: 450px;  /* Set fixed height for second container */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
-    overflow-y: auto;
-    flex-grow: 1;  /* Allow the chat to grow */
+    overflow-y: scroll; /* Ensure only vertical scrolling */
+    flex-grow: 1;
     margin-bottom: 0;
-    padding-bottom: 10px; /* Adjusted padding at the bottom */
-    display: none;  /* Hide the chat window initially */
+    padding-bottom: 10px;
+    display: none;  /* Hidden initially */
 }
 
 /* Chat area inside the message container */
@@ -130,10 +130,41 @@ h1 {
     justify-content: center;
     gap: 15px;
     position: sticky;
-    bottom: 0;  /* Keep the input at the bottom */
-    background-color: white;  /* Ensure the input box is always visible */
-    padding-top: 10px;
+    bottom: 10px;  /* Place input box and send button at the bottom */
+    background-color: white;
     width: 100%;
+    padding-top: 10px;
+    margin-top: 20px;
+}
+
+/* Use same design as the first container for the second input box */
+#user-message-input {
+    width: 70%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 30px;
+    border: 2px solid #ccc;
+    transition: border 0.3s ease-in-out;
+}
+
+#user-message-input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+#send-message-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#send-message-btn:hover {
+    background-color: #2c8ec7;
 }
 
 /* Adjust message bubbles */
@@ -152,13 +183,14 @@ h1 {
     position: relative;
 }
 
-/* Adjusting user (green) message bubbles */
+/* Adjusting user (green) message bubbles with more left padding */
 .user-bubble {
     background-color: #4CAF50;  /* Green for user messages */
     color: white;
     align-self: flex-end;
     margin-left: auto;
-    padding-right: 50px;  /* Fixed padding for user bubbles */
+    padding-right: 80px;  /* Fixed padding for user bubbles */
+    padding-left: 15px;  /* Added more left padding */
 }
 
 /* Adjusting bot (blue) message bubbles */
@@ -172,16 +204,12 @@ h1 {
     font-size: 12px;
     color: #7F8C8D;
     position: absolute;
-    bottom: -25px;  /* More space between bubble and timestamp */
-    left: 20px;  /* Padding to the left for consistent alignment */
+    bottom: -25px;
+    left: 20px;
+    white-space: nowrap; /* Keep the timestamp on one line */
 }
 
-/* Hide the messages container by default */
-.hidden {
-    display: none;
-}
-
-/* Scrollbar style for web and mobile */
+/* Scrollbar style for vertical scrolling */
 #messages-container::-webkit-scrollbar {
     width: 8px;
 }
