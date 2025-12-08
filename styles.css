@@ -59,7 +59,7 @@ h1 {
     margin: 20px 0;
 }
 
-/* Input container styles */
+/* Input container styles for first message */
 #input-container {
     display: flex;
     justify-content: center;
@@ -96,24 +96,46 @@ h1 {
     background-color: #2c8ec7;
 }
 
-/* Chat window adjustments */
+/* Messages container */
 #messages-container {
     display: none;
     padding: 20px;
-    overflow-y: auto;
-    max-height: 400px;
+    max-height: 500px;
+    width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
+    overflow-y: auto;
 }
 
-#upload-container {
+#message-input-container {
     display: flex;
     justify-content: center;
-    margin-top: 10px;
+    gap: 15px;
+    margin-top: 20px;
 }
 
-#upload-container input {
-    display: none;
+#user-message-input {
+    width: 70%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 30px;
+    border: 2px solid #ccc;
+    transition: border 0.3s ease-in-out;
+}
+
+#send-message-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#send-message-btn:hover {
+    background-color: #2c8ec7;
 }
 
 /* Messenger view adjustments */

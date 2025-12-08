@@ -18,7 +18,7 @@ function initializeChat() {
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">
                 ${greeting}
-                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                <div class="timestamp">${new Date().toLocaleString()}</div>
             </div>
         </div>
     `;
@@ -26,7 +26,7 @@ function initializeChat() {
 
 // Function to handle user messages
 function userMessage(message) {
-    let timestamp = new Date().toLocaleTimeString();
+    let timestamp = new Date().toLocaleString(); // Including date and time
     let messageHtml = `
         <div class="chat-message user-message">
             <div class="message-bubble user-bubble">
@@ -43,7 +43,7 @@ function userMessage(message) {
 // Function to handle bot replies
 function botReply(input) {
     let response = processInput(input);  // Process the user input and generate response
-    let timestamp = new Date().toLocaleTimeString();
+    let timestamp = new Date().toLocaleString(); // Including date and time
     let messageHtml = `
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">
@@ -62,7 +62,7 @@ function processInput(input) {
     input = input.toLowerCase();
 
     if (input.includes("name of the museum")) {
-        return `We are called the ${museumInfo.name}.`;
+        return `We are called the ${museumInfo.name}. Do you have any further questions?`;
     }
     else if (input.includes("open on tuesday")) {
         return `The museum is open on Tuesdays from ${museumInfo.museum_hours.tuesday}.`;
