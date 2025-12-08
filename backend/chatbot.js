@@ -61,7 +61,16 @@ function botReply(input) {
 function processInput(input) {
     input = input.toLowerCase();
 
-    if (input.includes("name of the museum")) {
+    if (input.includes("hello")) {
+        return "Hello there! How may I help you today?";
+    }
+    else if (input.includes("how are you")) {
+        return "I am doing well. How may I assist you today?";
+    }
+    else if (input.includes("what is your name")) {
+        return "I don't have a name yet, but I am always interested to hear some ideas! Is there anything I could help with today?";
+    }
+    else if (input.includes("name of the museum")) {
         return `We are called the ${museumInfo.name}. Do you have any further questions?`;
     }
     else if (input.includes("open on tuesday")) {
