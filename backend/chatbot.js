@@ -16,7 +16,6 @@ function loadJSONData() {
 function initializeChat() {
     document.getElementById("chat-area").innerHTML = `
         <div class="chat-message bot-message">
-            <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
             <div class="message-bubble bot-bubble">
                 ${greeting}
                 <div class="timestamp">${new Date().toLocaleTimeString()}</div>
@@ -53,7 +52,6 @@ function userMessage(message) {
     let timestamp = new Date().toLocaleTimeString();
     let messageHtml = `
         <div class="chat-message user-message">
-            <img src="user-profile-pic.jpg" class="profile-pic" alt="User">
             <div class="message-bubble user-bubble">
                 ${message}
                 <div class="timestamp">${timestamp}</div>
@@ -71,7 +69,6 @@ function botReply(input) {
     let timestamp = new Date().toLocaleTimeString();
     let messageHtml = `
         <div class="chat-message bot-message">
-            <img src="bot-profile-pic.jpg" class="profile-pic" alt="Bot">
             <div class="message-bubble bot-bubble">
                 ${response}
                 <div class="timestamp">${timestamp}</div>

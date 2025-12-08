@@ -40,9 +40,8 @@
                 botReply(userInput);     // Let the bot respond
             }
             document.getElementById("user-input").value = ""; // Clear the input field
-            // Hide the welcome message and show the chat window
-            document.getElementById("welcome-container").style.display = 'none';
-            document.getElementById("chat-window").classList.remove("hidden");
+            document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome container
+            document.getElementById("chat-window").classList.remove("hidden"); // Show chat window
         });
 
         // Allow sending messages by pressing Enter
@@ -54,9 +53,8 @@
                     botReply(userInput);     // Let the bot respond
                 }
                 document.getElementById("user-input").value = ""; // Clear the input field
-                // Hide the welcome message and show the chat window
-                document.getElementById("welcome-container").style.display = 'none';
-                document.getElementById("chat-window").classList.remove("hidden");
+                document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome container
+                document.getElementById("chat-window").classList.remove("hidden"); // Show chat window
             }
         });
     </script>
