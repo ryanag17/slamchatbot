@@ -25,7 +25,7 @@
         </div>
 
         <!-- Chat window where conversation happens (hidden initially) -->
-        <div id="messages-container" class="hidden">
+        <div id="messages-container">
             <div id="chat-area"></div>
             <!-- Message input for further questions -->
             <div id="message-input-container">
@@ -46,7 +46,7 @@
             }
             document.getElementById("user-input").value = ""; // Clear the input field
             document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome screen
-            document.getElementById("messages-container").classList.remove("hidden"); // Show chat area
+            document.getElementById("messages-container").style.display = 'block'; // Show chat area
         });
 
         // Allow sending messages by pressing Enter
@@ -59,7 +59,7 @@
                 }
                 document.getElementById("user-input").value = ""; // Clear the input field
                 document.getElementById("welcome-container").style.display = 'none'; // Hide the welcome screen
-                document.getElementById("messages-container").classList.remove("hidden"); // Show chat area
+                document.getElementById("messages-container").style.display = 'block'; // Show chat area
             }
         });
 
