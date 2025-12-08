@@ -27,26 +27,23 @@ header {
     justify-content: center;
     background: linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(253,187,45,1) 100%);
     color: white;
-    padding: 20px 20px;  /* Adjust padding to fit */
+    padding: 20px 20px;
     border-bottom: 2px solid #ccc;
-    max-width: 100%;
-    text-align: center;  /* Center text */
 }
 
 /* Logo adjustments */
 #logo {
-    height: 35px;  /* Reduced logo size */
-    margin-bottom: 10px;  /* Space between logo and title */
-    max-width: 100%;  /* Prevents the logo from overflowing */
+    height: 35px;  /* Logo size */
+    margin-bottom: 10px;
+    max-width: 100%;
 }
 
-/* Title adjustments */
 h1 {
-    font-size: 24px;  /* Font size for title */
+    font-size: 24px;
     margin: 0;
-    white-space: nowrap;  /* Prevents the title from wrapping */
 }
 
+/* Welcome message area */
 #welcome-container {
     text-align: center;
     padding: 50px 20px;
@@ -63,6 +60,7 @@ h1 {
     margin: 20px 0;
 }
 
+/* Input container styles */
 #input-container {
     display: flex;
     justify-content: center;
@@ -99,6 +97,7 @@ h1 {
     background-color: #2c8ec7;
 }
 
+/* Chat window adjustments */
 #chat-window {
     display: none;
     padding: 20px;
@@ -135,14 +134,14 @@ h1 {
 }
 
 .user-bubble {
-    background-color: #4CAF50;  /* Green color for user messages */
+    background-color: #4CAF50;  /* Green for user messages */
     color: white;
     align-self: flex-end;
     margin-left: auto;
 }
 
 .bot-bubble {
-    background-color: #3498db;  /* Blue color for bot messages */
+    background-color: #3498db;  /* Blue for bot responses */
     color: white;
 }
 
@@ -169,22 +168,14 @@ h1 {
     }
 }
 
-/* Make sure chat window adjusts properly on smaller screens */
+/* Mobile responsiveness */
 @media (max-width: 600px) {
     #chat-container {
         width: 100%;
     }
 
-    #welcome-container h2 {
-        font-size: 28px;
-    }
-
     #user-input {
         width: 60%;
-    }
-
-    #send-btn {
-        padding: 8px 16px;
     }
 
     .chat-message .message-bubble {
