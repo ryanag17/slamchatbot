@@ -105,13 +105,14 @@ h1 {
     display: flex;
     flex-direction: column;
     padding: 20px;
-    max-height: 400px;  /* Adjusted height to avoid excessive white space */
+    height: 100%;  /* Ensure container takes full height */
     width: 100%;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
     overflow-y: auto;
     flex-grow: 1;  /* Allow the chat to grow */
     margin-bottom: 0;
+    padding-bottom: 10px; /* Adjusted padding at the bottom */
 }
 
 /* Chat area inside the message container */
@@ -120,38 +121,19 @@ h1 {
     margin-bottom: 10px;
 }
 
+/* Ensure the input box is at the bottom and doesn't get pushed up */
 #message-input-container {
     display: flex;
     justify-content: center;
     gap: 15px;
     margin-top: 20px;
+    position: sticky;
+    bottom: 0;  /* Keep the input at the bottom */
+    background-color: white;  /* Ensure the input box is always visible */
+    padding-top: 10px;
 }
 
-#user-message-input {
-    width: 70%;
-    padding: 12px;
-    font-size: 16px;
-    border-radius: 30px;
-    border: 2px solid #ccc;
-    transition: border 0.3s ease-in-out;
-}
-
-#send-message-btn {
-    padding: 12px 20px;
-    font-size: 16px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#send-message-btn:hover {
-    background-color: #2c8ec7;
-}
-
-/* Messenger view adjustments */
+/* Adjust message bubbles */
 .chat-message {
     display: flex;
     align-items: flex-start;
@@ -173,7 +155,7 @@ h1 {
     color: white;
     align-self: flex-end;
     margin-left: auto;
-    padding-right: 20px;  /* Fixed padding for user bubbles */
+    padding-right: 50px;  /* Fixed padding for user bubbles */
 }
 
 /* Adjusting bot (blue) message bubbles */
@@ -188,7 +170,7 @@ h1 {
     color: #7F8C8D;
     position: absolute;
     bottom: -25px;  /* More space between bubble and timestamp */
-    right: 10px;
+    left: 20px;  /* Padding to the left for consistent alignment */
 }
 
 /* Hide the messages container by default */
