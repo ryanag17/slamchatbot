@@ -137,6 +137,7 @@ h1 {
     width: 100%;
     padding-top: 10px;
     margin-top: 20px;
+    padding-bottom: 10px;
 }
 
 /* Same design as the first container for the second input box */
@@ -211,20 +212,6 @@ h1 {
     bottom: -25px;
     left: 20px;
     white-space: nowrap; /* Keep the timestamp on one line */
-}
-
-/* Scrollbar style for vertical scrolling */
-#messages-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-#messages-container::-webkit-scrollbar-thumb {
-    background-color: #3498db;
-    border-radius: 10px;
-}
-
-#messages-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
 }
 
 /* Fade-in effect for new messages */
