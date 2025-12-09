@@ -92,12 +92,22 @@ function handleMuseumInfo(input) {
 
 
 function handleExhibitions(input) {
-    if (input.includes("exhibitions") && input.includes("view")) {
-        const onView = exhibitionsData.filter(ex => ex.on_view);
-        if (onView.length === 0) return "No exhibitions are currently on view.";
+    input = input.toLowerCase();
 
-        const names = onView.map(ex => ex.name).join(", ");
-        return `Exhibitions currently on view: ${names}`;
+    // Keyword groups for checking
+    const keywordGroups = [
+        ["exhibitions", "view"],
+        ["current", "exhibitions"] 
+    ];
+
+    for (const group of keywordGroups) {
+        if (group.every(keyword => input.includes(keyword))) {
+            const onView = exhibitionsData.filter(ex => ex.on_view);
+            if (onView.length === 0) return "No exhibitions are currently on view.";
+
+            const names = onView.map(ex => ex.name).join(", ");
+            return `Exhibitions currently on view: ${names}`;
+        }
     }
 
     for (const ex of exhibitionsData) {
