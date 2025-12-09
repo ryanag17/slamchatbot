@@ -90,10 +90,10 @@ function processInput(input) {
 // Scroll the chat to the bottom when new messages are added
 function scrollChatToBottom() {
     let chatArea = document.getElementById("chat-area");
-    chatArea.scrollTop = chatArea.scrollHeight;  // Scroll to the bottom to show the latest message
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// Modify bot and user messages to show at the bottom
+// Add a fade-in effect for new messages
 function animateMessage() {
     const newMessage = document.querySelector('.chat-message:last-child');
     newMessage.classList.add('fade-in');

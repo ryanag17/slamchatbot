@@ -123,7 +123,7 @@ h1 {
     flex-grow: 1;
     overflow-y: auto;
     display: flex;
-    flex-direction: column-reverse;  /* Ensure the most recent messages are at the bottom */
+    flex-direction: column-reverse;  /* Ensure most recent messages are at the bottom */
 }
 
 /* Ensure the input box is at the bottom and doesn't get pushed up */

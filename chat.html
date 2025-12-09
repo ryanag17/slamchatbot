@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLAM Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="chat-container">
+        <!-- Header with logo and title -->
+        <header>
+            <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
+            <h1>SLAM Chatbot</h1>
+        </header>
+
+        <!-- Chat area where messages will appear -->
+        <div id="messages-container">
+            <div id="chat-area"></div>
+        </div>
+
+        <!-- Message input and send button at the bottom -->
+        <div id="message-input-container">
+            <input type="text" id="user-message-input" placeholder="Ask me another question..." />
+            <button id="send-message-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Retrieve the initial message from the URL parameters
+        let urlParams = new URLSearchParams(window.location.search);
+        let initialMessage = urlParams.get('message');
+
+        // Initialize the conversation with the first message
+        if (initialMessage) {
+            addMessage('user', initialMessage);
+            addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?");
+        }
+
+        // Add user message to the chat
+        function addMessage(sender, message) {
+            let chatArea = document.getElementById("chat-area");
+            let messageContainer = document.createElement("div");
+            messageContainer.classList.add('chat-message');
+            messageContainer.classList.add(sender + '-message');
+
+            let messageBubble = document.createElement("div");
+            messageBubble.classList.add('message-bubble');
+            messageBubble.classList.add(sender + '-bubble');
+            messageBubble.innerText = message;
+
+            let timestamp = new Date().toLocaleString();
+            let timestampDiv = document.createElement("div");
+            timestampDiv.classList.add("timestamp");
+            timestampDiv.innerText = timestamp;
+
+            messageBubble.appendChild(timestampDiv);
+            messageContainer.appendChild(messageBubble);
+            chatArea.appendChild(messageContainer);
+
+            // Scroll to the bottom of the chat area
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Handle the sending of a new message
+        document.getElementById("send-message-btn").addEventListener("click", function() {
+            let userInput = document.getElementById("user-message-input").value;
+            if (userInput.trim() !== "") {
+                addMessage('user', userInput); // Add user message
+                addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?"); // Add bot response
+                document.getElementById("user-message-input").value = ""; // Clear input box
+            }
+        });
+
+        // Allow sending messages by pressing Enter
+        document.getElementById("user-message-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                let userInput = document.getElementById("user-message-input").value;
+                if (userInput.trim() !== "") {
+                    addMessage('user', userInput); // Add user message
+                    addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?"); // Add bot response
+                    document.getElementById("user-message-input").value = ""; // Clear input box
+                }
+            }
+        });
+    </script>
+</body>
+</html>
