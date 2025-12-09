@@ -10,7 +10,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow-x: hidden; /* no horizontal scrolling */
+    overflow-x: hidden;
 }
 
 /* container */
@@ -64,7 +64,7 @@ h1 { font-size: 24px; margin: 0; }
     cursor: pointer;
 }
 
-/* MESSAGES CONTAINER - take all space between header and input */
+/* MESSAGES CONTAINER */
 #messages-container {
     flex: 1;
     display: flex;
@@ -72,10 +72,10 @@ h1 { font-size: 24px; margin: 0; }
     padding: 20px;
     background-color: #ecf0f1;
     border-top: 1px solid #ccc;
-    overflow: hidden; /* prevent x-scroll */
+    overflow: hidden;
 }
 
-/* chat area uses full space; vertical scroll only */
+/* CHAT AREA */
 #chat-area {
     flex: 1;
     display: flex;
@@ -86,7 +86,7 @@ h1 { font-size: 24px; margin: 0; }
     padding-right: 8px;
 }
 
-/* Input area always at bottom */
+/* INPUT AREA */
 #message-input-container {
     display: flex;
     justify-content: center;
@@ -96,14 +96,13 @@ h1 { font-size: 24px; margin: 0; }
     border-top: 1px solid #e0e0e0;
 }
 
-/* message row */
+/* MESSAGE BUBBLES */
 .chat-message {
     width: 100%;
     display: flex;
     align-items: flex-start;
 }
 
-/* bubble */
 .message-bubble {
     max-width: 72%;
     padding: 12px 14px;
@@ -116,7 +115,7 @@ h1 { font-size: 24px; margin: 0; }
     display: inline-block;
 }
 
-/* user on the right */
+/* user bubble right */
 .chat-message.user-message { justify-content: flex-end; }
 .user-bubble {
     background-color: #4CAF50;
@@ -124,7 +123,7 @@ h1 { font-size: 24px; margin: 0; }
     border-bottom-right-radius: 4px;
 }
 
-/* bot on the left */
+/* bot bubble left */
 .chat-message.bot-message { justify-content: flex-start; }
 .bot-bubble {
     background-color: #3498db;
@@ -132,20 +131,18 @@ h1 { font-size: 24px; margin: 0; }
     border-bottom-left-radius: 4px;
 }
 
-/* timestamp inside bubble to avoid overflow */
 .timestamp {
     font-size: 12px;
     color: rgba(255,255,255,0.8);
     margin-top: 8px;
 }
 
-/* typing dots style (used as placeholder) */
 .typing-dots {
     font-size: 18px;
     opacity: 0.85;
 }
 
-/* small screens */
+/* mobile */
 @media (max-width: 600px) {
     #chat-container { width: 100%; height: 100vh; border-radius: 0; }
     #user-input, #user-message-input { width: 60%; }
