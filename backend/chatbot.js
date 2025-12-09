@@ -1,7 +1,7 @@
 let museumInfo = {};
 let greeting = "Hello! I’m your friendly SLAM chatbot. How can I assist you today?";
 
-// Load museum data
+// Load JSON data
 function loadJSONData() {
     fetch('./data/museum_info.json')
         .then(response => response.json())
@@ -13,16 +13,14 @@ function loadJSONData() {
 
 
 
-// ------------------------------
 // ADD USER MESSAGE
-// ------------------------------
 function userMessage(message) {
     let timestamp = new Date().toLocaleString('en-US', {
         month: '2-digit', day: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true
     });
 
-    let messageHtml = `
+    let html = `
         <div class="chat-message user-message">
             <div class="message-bubble user-bubble">
                 ${message}
@@ -31,15 +29,13 @@ function userMessage(message) {
         </div>
     `;
 
-    document.getElementById("chat-area").innerHTML += messageHtml;
+    document.getElementById("chat-area").innerHTML += html;
     scrollChatToBottom();
 }
 
 
 
-// ------------------------------
 // ADD BOT REPLY
-// ------------------------------
 function botReply(input) {
     let response = processInput(input);
 
@@ -48,7 +44,7 @@ function botReply(input) {
         hour: '2-digit', minute: '2-digit', hour12: true
     });
 
-    let messageHtml = `
+    let html = `
         <div class="chat-message bot-message">
             <div class="message-bubble bot-bubble">
                 ${response}
@@ -57,15 +53,13 @@ function botReply(input) {
         </div>
     `;
 
-    document.getElementById("chat-area").innerHTML += messageHtml;
+    document.getElementById("chat-area").innerHTML += html;
     scrollChatToBottom();
 }
 
 
 
-// ------------------------------
-// PROCESS INPUT
-// ------------------------------
+// PROCESS INPUT LOGIC
 function processInput(input) {
     input = input.toLowerCase();
 
@@ -97,15 +91,13 @@ function processInput(input) {
 
 
 
-// ------------------------------
 // SCROLL TO BOTTOM
-// ------------------------------
 function scrollChatToBottom() {
-    let chatArea = document.getElementById("chat-area");
-    chatArea.scrollTop = chatArea.scrollHeight;
+    let area = document.getElementById("chat-area");
+    area.scrollTop = area.scrollHeight;
 }
 
 
 
-// LOAD JSON ON PAGE LOAD
-loadJSONData();
+// LOAD JSON
+window.addEventListener("load", loadJSONData);

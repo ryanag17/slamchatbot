@@ -28,43 +28,47 @@
 
     </div>
 
-    <script>
-        // GET INITIAL MESSAGE FROM index.html
-        let urlParams = new URLSearchParams(window.location.search);
-        let initialMessage = urlParams.get('message');
+    <!-- LOAD BOT LOGIC *FIRST* -->
+    <script src="chatbot.js"></script>
 
-        // SEND INITIAL MESSAGE ON LOAD
-        window.onload = function() {
+    <!-- PAGE LOGIC -->
+    <script>
+
+        // Retrieve message passed from index.html
+        const params = new URLSearchParams(window.location.search);
+        const initialMessage = params.get("message");
+
+        // Run AFTER chatbot.js is fully loaded
+        window.onload = function () {
+
+            // If user typed something on index.html → show it
             if (initialMessage) {
                 userMessage(initialMessage);
                 botReply(initialMessage);
             }
+
+            // BUTTON SEND
+            document.getElementById("send-message-btn").addEventListener("click", sendMessage);
+
+            // ENTER SEND
+            document.getElementById("user-message-input").addEventListener("keydown", function (e) {
+                if (e.key === "Enter") sendMessage();
+            });
         };
 
-        // SEND WITH BUTTON
-        document.getElementById("send-message-btn").addEventListener("click", function() {
-            sendUserMessage();
-        });
 
-        // SEND WITH ENTER
-        document.getElementById("user-message-input").addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                sendUserMessage();
-            }
-        });
-
-        function sendUserMessage() {
+        // Sends a new message in chat.html
+        function sendMessage() {
             let userInput = document.getElementById("user-message-input").value;
+
             if (userInput.trim() !== "") {
                 userMessage(userInput);
                 botReply(userInput);
                 document.getElementById("user-message-input").value = "";
             }
         }
-    </script>
 
-    <!-- IMPORTANT: LOAD CHATBOT LOGIC -->
-    <script src="chatbot.js"></script>
+    </script>
 
 </body>
 </html>
