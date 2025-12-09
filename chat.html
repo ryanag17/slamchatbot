@@ -1,74 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>SLAM Chatbot</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div id="chat-container">
+<div id="chat-container">
 
-        <!-- HEADER -->
-        <header>
-            <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
-            <h1>SLAM Chatbot</h1>
-        </header>
+    <header>
+        <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
+        <h1>SLAM Chatbot</h1>
+    </header>
 
-        <!-- MESSAGE AREA -->
-        <div id="messages-container">
-            <div id="chat-area"></div>
-        </div>
-
-        <!-- INPUT AREA -->
-        <div id="message-input-container">
-            <input type="text" id="user-message-input" placeholder="Ask me another question..." />
-            <button id="send-message-btn">Send</button>
-        </div>
-
+    <div id="messages-container">
+        <div id="chat-area" aria-live="polite" role="log"></div>
     </div>
 
-    <!-- LOAD BOT LOGIC *FIRST* -->
-    <script src="chatbot.js"></script>
+    <div id="message-input-container">
+        <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
+        <button id="send-message-btn">Send</button>
+    </div>
 
-    <!-- PAGE LOGIC -->
-    <script>
+</div>
 
-        // Retrieve message passed from index.html
-        const params = new URLSearchParams(window.location.search);
-        const initialMessage = params.get("message");
+<!-- chatbot logic (loads data and processInput) -->
+<script src="chatbot.js"></script>
 
-        // Run AFTER chatbot.js is fully loaded
-        window.onload = function () {
+<script>
+/*  Page script: builds UI messages, typing effect, and send/enter handling.
+    Waits until museum data is loaded before calling processInput. */
 
-            // If user typed something on index.html → show it
-            if (initialMessage) {
-                userMessage(initialMessage);
-                botReply(initialMessage);
-            }
+const chatArea = document.getElementById('chat-area');
+const sendBtn = document.getElementById('send-message-btn');
+const inputEl = document.getElementById('user-message-input');
 
-            // BUTTON SEND
-            document.getElementById("send-message-btn").addEventListener("click", sendMessage);
-
-            // ENTER SEND
-            document.getElementById("user-message-input").addEventListener("keydown", function (e) {
-                if (e.key === "Enter") sendMessage();
-            });
-        };
-
-
-        // Sends a new message in chat.html
-        function sendMessage() {
-            let userInput = document.getElementById("user-message-input").value;
-
-            if (userInput.trim() !== "") {
-                userMessage(userInput);
-                botReply(userInput);
-                document.getElementById("user-message-input").value = "";
-            }
+// helper: ensure chatbot.js has loaded museum data before using processInput
+function ensureDataLoaded(callback) {
+    if (window.__museumLoaded) return callback();
+    const check = setInterval(() => {
+        if (window.__museumLoaded) {
+            clearInterval(check);
+            callback();
         }
+    }, 50);
+}
 
-    </script>
+// create and append a message element; sender = 'user' or 'bot'
+function appendMessage(sender, text, isTypingPlaceholder = false) {
+    const msgWrap = document.createElement('div');
+    msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble ' + (sender === 'user' ? 'user-bubble' : 'bot-bubble');
+
+    if (isTypingPlaceholder) {
+        // placeholder for typing; show a dot indicator initially
+        const dots = document.createElement('span');
+        dots.className = 'typing-dots';
+        dots.innerText = '· · ·';
+        bubble.appendChild(dots);
+    } else {
+        bubble.innerText = text;
+    }
+
+    // timestamp
+    const timestamp = document.createElement('div');
+    timestamp.className = 'timestamp';
+    timestamp.innerText = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+
+    bubble.appendChild(timestamp);
+    msgWrap.appendChild(bubble);
+    chatArea.appendChild(msgWrap);
+
+    // always scroll to bottom after adding element
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    return { msgWrap, bubble, timestamp };
+}
+
+// typing animation: replace placeholder bubble with typed text
+function typeBotReply(text, typingSpeed = 20) {
+    // create bot placeholder
+    const { msgWrap, bubble } = appendMessage('bot', '', true);
+
+    // replace typing dots with typed characters gradually
+    bubble.innerHTML = ''; // clear placeholder
+    const typedDiv = document.createElement('div');
+    bubble.appendChild(typedDiv);
+
+    let i = 0;
+    function step() {
+        if (i < text.length) {
+            typedDiv.innerText += text.charAt(i);
+            i++;
+            chatArea.scrollTop = chatArea.scrollHeight;
+            setTimeout(step, typingSpeed);
+        } else {
+            // append timestamp after typing
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.innerText = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+            bubble.appendChild(timestamp);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+    }
+    step();
+}
+
+// show user message bubble and then bot reply (typed)
+function showUserThenBot(userText) {
+    appendMessage('user', userText);
+    // ensure data loaded then compute bot reply and type it
+    ensureDataLoaded(() => {
+        const reply = processInput(userText || '');
+        // small delay before bot starts typing to look natural
+        setTimeout(() => typeBotReply(reply), 350);
+    });
+}
+
+// Retrieve any message passed from index.html
+const params = new URLSearchParams(window.location.search);
+const initialMessage = params.get('message');
+
+// IMPORTANT: Wait until chatbot.js has at least initiated load of JSON (it sets window.__museumLoaded true when done)
+window.addEventListener('load', () => {
+    // if index.html passed a message, display it and bot reply
+    if (initialMessage) {
+        showUserThenBot(initialMessage);
+    }
+});
+
+// send function for button and Enter
+function sendFromInput() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    showUserThenBot(text);
+    inputEl.focus();
+}
+
+sendBtn.addEventListener('click', sendFromInput);
+inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendFromInput();
+});
+</script>
 
 </body>
 </html>

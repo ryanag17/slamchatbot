@@ -1,103 +1,64 @@
-let museumInfo = {};
-let greeting = "Hello! I’m your friendly SLAM chatbot. How can I assist you today?";
+/* chatbot.js
+   - loads museum_info.json into museumInfo
+   - exposes processInput(input)
+   - sets window.__museumLoaded = true when data available
+*/
 
-// Load JSON data
+let museumInfo = {};
+window.__museumLoaded = false; // flag used by chat.html
+
+const greeting = "Hello! I’m your friendly SLAM chatbot. How can I assist you today?";
+
 function loadJSONData() {
     fetch('./data/museum_info.json')
-        .then(response => response.json())
-        .then(data => {
-            museumInfo = data;
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to load museum_info.json");
+            return response.json();
         })
-        .catch(error => console.error("Error loading museum_info.json:", error));
+        .then(data => {
+            museumInfo = data || {};
+            window.__museumLoaded = true;
+        })
+        .catch(error => {
+            console.error("Error loading museum_info.json:", error);
+            // still mark loaded so chat doesn't hang forever (it will use fallback)
+            window.__museumLoaded = true;
+        });
 }
 
-
-
-// ADD USER MESSAGE
-function userMessage(message) {
-    let timestamp = new Date().toLocaleString('en-US', {
-        month: '2-digit', day: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: true
-    });
-
-    let html = `
-        <div class="chat-message user-message">
-            <div class="message-bubble user-bubble">
-                ${message}
-                <div class="timestamp">${timestamp}</div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById("chat-area").innerHTML += html;
-    scrollChatToBottom();
-}
-
-
-
-// ADD BOT REPLY
-function botReply(input) {
-    let response = processInput(input);
-
-    let timestamp = new Date().toLocaleString('en-US', {
-        month: '2-digit', day: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: true
-    });
-
-    let html = `
-        <div class="chat-message bot-message">
-            <div class="message-bubble bot-bubble">
-                ${response}
-                <div class="timestamp">${timestamp}</div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById("chat-area").innerHTML += html;
-    scrollChatToBottom();
-}
-
-
-
-// PROCESS INPUT LOGIC
+// Processing logic (returns reply string synchronously)
 function processInput(input) {
+    if (!input || typeof input !== 'string') return "I'm sorry, I didn't understand that. Can you please rephrase your question?";
     input = input.toLowerCase();
 
     if (input.includes("hello")) {
         return "Hello there! How may I help you today?";
     }
-    else if (input.includes("how are you")) {
+    if (input.includes("how are you")) {
         return "I am doing well. How may I assist you today?";
     }
-    else if (input.includes("what is your name")) {
+    if (input.includes("what is your name")) {
         return "I don't have a name yet, but I am always interested to hear some ideas!";
     }
-    else if (input.includes("name of the museum")) {
-        return `We are called the ${museumInfo.name}.`;
+    if (input.includes("name of the museum") || input.includes("what is the museum called") || input.includes("museum name")) {
+        return museumInfo.name ? `We are called the ${museumInfo.name}.` : "We are the St. Louis Art Museum.";
     }
-    else if (input.includes("open on tuesday")) {
-        return `The museum is open on Tuesdays from ${museumInfo.museum_hours.tuesday}.`;
+    if (input.includes("open on tuesday") || input.includes("tuesday hours") || input.includes("open tuesday")) {
+        return museumInfo.museum_hours && museumInfo.museum_hours.tuesday ? `The museum is open on Tuesdays from ${museumInfo.museum_hours.tuesday}.` : "Please check the museum hours.";
     }
-    else if (input.includes("free parking")) {
-        return museumInfo.parking.free;
+    if (input.includes("free parking") || input.includes("parking")) {
+        return museumInfo.parking && museumInfo.parking.free ? museumInfo.parking.free : "Parking information is not available right now.";
     }
-    else if (input.includes("location")) {
-        return `We are located at: ${museumInfo.location}.`;
+    if (input.includes("location") || input.includes("address")) {
+        return museumInfo.location ? `We are located at: ${museumInfo.location}.` : "Location information is not available right now.";
     }
-    else {
-        return "I'm sorry, I didn't understand that. Can you please rephrase your question?";
-    }
+
+    return "I'm sorry, I didn't understand that. Can you please rephrase your question?";
 }
 
+// ensure data loads on script run
+loadJSONData();
 
-
-// SCROLL TO BOTTOM
-function scrollChatToBottom() {
-    let area = document.getElementById("chat-area");
-    area.scrollTop = area.scrollHeight;
-}
-
-
-
-// LOAD JSON
-window.addEventListener("load", loadJSONData);
+// expose processInput globally (already is), and museum info for debugging if needed
+window.processInput = processInput;
+window.museumInfo = museumInfo;
