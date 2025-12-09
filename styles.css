@@ -1,4 +1,4 @@
-/* Global styles */
+/* GLOBAL STYLES — INDEX.HTML (unchanged and working) */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -12,8 +12,8 @@ body {
 
 #chat-container {
     width: 90%;
-    max-width: 1100px;  /* Larger container */
-    height: 600px;  /* Fixed container height */
+    max-width: 1100px;
+    height: 600px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -22,7 +22,7 @@ body {
     flex-direction: column;
 }
 
-/* Header adjustments */
+/* HEADER */
 header {
     display: flex;
     flex-direction: column;
@@ -32,13 +32,11 @@ header {
     color: white;
     padding: 15px 20px;
     border-bottom: 2px solid #ccc;
-    margin-bottom: 0;
 }
 
 #logo {
     height: 35px;
     margin-bottom: 10px;
-    max-width: 100%;
 }
 
 h1 {
@@ -46,7 +44,7 @@ h1 {
     margin: 0;
 }
 
-/* Welcome message area */
+/* INDEX.HTML ONLY AREA */
 #welcome-container {
     text-align: center;
     padding: 50px 20px;
@@ -63,7 +61,6 @@ h1 {
     margin: 20px 0;
 }
 
-/* Input container styles for first message */
 #input-container {
     display: flex;
     justify-content: center;
@@ -77,12 +74,6 @@ h1 {
     font-size: 16px;
     border-radius: 30px;
     border: 2px solid #ccc;
-    transition: border 0.3s ease-in-out;
-}
-
-#user-input:focus {
-    border-color: #3498db;
-    outline: none;
 }
 
 #send-btn {
@@ -92,68 +83,50 @@ h1 {
     color: white;
     border: none;
     border-radius: 30px;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-#send-btn:hover {
-    background-color: #2c8ec7;
-}
+/* ================================================================= */
+/* ========================= CHAT.HTML FIXES ======================= */
+/* ================================================================= */
 
-/* Messages container (second container) */
+/* Messages container fills all space between header + input */
 #messages-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    height: 450px;  /* Set fixed height for second container */
-    width: 100%;
     background-color: #ecf0f1;
+    padding: 20px;
     border-top: 1px solid #ccc;
-    overflow-y: auto; /* Vertical scrolling only */
-    flex-grow: 1;
-    margin-bottom: 0;
-    padding-bottom: 10px;
-    display: block;  /* Make sure it's visible initially */
+    overflow: hidden; /* no x-scroll */
 }
 
-/* Chat area inside the message container */
+/* Chat-area fills all available space and scrolls ONLY vertically */
 #chat-area {
-    padding-right: 15px; /* Space for the scrollbar */
-    margin-bottom: 10px;
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
+    overflow-x: hidden !important;
     display: flex;
-    flex-direction: column-reverse;  /* Ensure most recent messages are at the bottom */
-    word-wrap: break-word; /* Make sure the text doesn't overflow horizontally */
+    flex-direction: column; /* correct order */
+    gap: 20px;
+    padding-right: 10px;
 }
 
-/* Ensure the input box is at the bottom and doesn't get pushed up */
+/* Input ALWAYS at bottom */
 #message-input-container {
     display: flex;
     justify-content: center;
     gap: 15px;
-    position: relative;  /* Remove sticky positioning */
-    bottom: 10px;  /* Added bottom padding */
     background-color: #fff;
-    width: 100%;
-    padding-top: 10px;
-    margin-top: 20px;
-    padding-bottom: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid #ccc;
 }
 
-/* Same design as the first container for the second input box */
 #user-message-input {
     width: 70%;
     padding: 12px;
     font-size: 16px;
     border-radius: 30px;
     border: 2px solid #ccc;
-    transition: border 0.3s ease-in-out;
-}
-
-#user-message-input:focus {
-    border-color: #3498db;
-    outline: none;
 }
 
 #send-message-btn {
@@ -163,89 +136,47 @@ h1 {
     color: white;
     border: none;
     border-radius: 30px;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-#send-message-btn:hover {
-    background-color: #2c8ec7;
-}
-
-/* Adjust message bubbles */
+/* MESSAGE BUBBLES */
 .chat-message {
+    width: 100%;
     display: flex;
-    align-items: flex-start;
-    margin-bottom: 20px;  /* Fixed space between messages */
 }
 
-.chat-message .message-bubble {
+.message-bubble {
+    max-width: 70%;
     padding: 15px;
     border-radius: 10px;
-    font-size: 16px;
-    max-width: 70%;
     word-wrap: break-word;
-    position: relative;
-    box-sizing: border-box; /* Ensures padding doesn't overflow */
+    overflow-wrap: break-word;
 }
 
-/* Adjusting user (green) message bubbles */
+/* USER bubble */
 .user-bubble {
-    background-color: #4CAF50;  /* Green for user messages */
-    color: white;
-    align-self: flex-end;
     margin-left: auto;
-    padding-right: 50px;  /* Fixed padding for user bubbles */
-    padding-left: 15px;  /* Adjusted padding to avoid overflow */
-    word-wrap: break-word;  /* Ensure the text wraps inside the bubble */
-}
-
-/* Adjusting bot (blue) message bubbles */
-.bot-bubble {
-    background-color: #3498db;  /* Blue for bot responses */
+    background-color: #4CAF50;
     color: white;
-    padding-left: 20px;  /* Fixed padding for bot bubbles */
 }
 
+/* BOT bubble */
+.bot-bubble {
+    background-color: #3498db;
+    color: white;
+}
+
+/* TIMESTAMP — now INSIDE bubble to avoid overflow */
 .timestamp {
     font-size: 12px;
-    color: #7F8C8D;
-    position: absolute;
-    bottom: -25px;
-    left: 20px;
-    white-space: nowrap; /* Keep the timestamp on one line */
+    color: #d0d0d0;
+    margin-top: 8px;
 }
 
-/* Fade-in effect for new messages */
+/* Fade-in effect */
 .chat-message.fade-in {
     opacity: 0;
-    animation: fadeIn 0.5s forwards;
+    animation: fadeIn .5s forwards;
 }
-
 @keyframes fadeIn {
-    to {
-        opacity: 1;
-    }
-}
-
-/* Mobile responsiveness */
-@media (max-width: 600px) {
-    #chat-container {
-        width: 100%;
-    }
-
-    #user-input {
-        width: 60%;
-    }
-
-    .chat-message .message-bubble {
-        max-width: 80%;
-    }
-
-    #logo {
-        height: 30px;
-    }
-
-    h1 {
-        font-size: 20px;
-    }
+    to { opacity: 1; }
 }

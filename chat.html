@@ -7,82 +7,107 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
     <div id="chat-container">
-        <!-- Header with logo and title -->
+
         <header>
             <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
             <h1>SLAM Chatbot</h1>
         </header>
 
-        <!-- Chat area where messages will appear -->
         <div id="messages-container">
             <div id="chat-area"></div>
         </div>
 
-        <!-- Message input and send button at the bottom -->
         <div id="message-input-container">
-            <input type="text" id="user-message-input" placeholder="Ask me another question..." />
+            <input type="text" id="user-message-input" placeholder="Ask me another question...">
             <button id="send-message-btn">Send</button>
         </div>
+
     </div>
 
-    <script>
-        // Retrieve the initial message from the URL parameters
-        let urlParams = new URLSearchParams(window.location.search);
-        let initialMessage = urlParams.get('message');
+    <script src="chatbot.js"></script>
 
-        // Initialize the conversation with the first message
-        if (initialMessage) {
-            addMessage('user', initialMessage);
-            addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?");
+    <script>
+
+        const chatArea = document.getElementById("chat-area");
+
+        /* TYPING ANIMATION */
+        function typeText(element, text, callback) {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, 20);
+                } else {
+                    if (callback) callback();
+                }
+            }
+            type();
         }
 
-        // Add user message to the chat
-        function addMessage(sender, message) {
-            let chatArea = document.getElementById("chat-area");
-            let messageContainer = document.createElement("div");
-            messageContainer.classList.add('chat-message');
-            messageContainer.classList.add(sender + '-message');
+        /* ADD MESSAGE */
+        function addMessage(sender, text, animated = false) {
+            const container = document.createElement("div");
+            container.classList.add("chat-message");
 
-            let messageBubble = document.createElement("div");
-            messageBubble.classList.add('message-bubble');
-            messageBubble.classList.add(sender + '-bubble');
-            messageBubble.innerText = message;
+            const bubble = document.createElement("div");
+            bubble.classList.add("message-bubble", `${sender}-bubble`);
 
-            let timestamp = new Date().toLocaleString();
-            let timestampDiv = document.createElement("div");
-            timestampDiv.classList.add("timestamp");
-            timestampDiv.innerText = timestamp;
+            const timestamp = document.createElement("div");
+            timestamp.classList.add("timestamp");
+            timestamp.innerText = new Date().toLocaleString();
 
-            messageBubble.appendChild(timestampDiv);
-            messageContainer.appendChild(messageBubble);
-            chatArea.appendChild(messageContainer);
+            if (animated && sender === "bot") {
+                bubble.innerHTML = "";
+                bubble.appendChild(timestamp);
+                container.appendChild(bubble);
+                chatArea.appendChild(container);
 
-            // Scroll to the bottom of the chat area
+                typeText(bubble, text, () => {
+                    bubble.appendChild(timestamp);
+                });
+
+            } else {
+                bubble.innerText = text;
+                bubble.appendChild(timestamp);
+                container.appendChild(bubble);
+                chatArea.appendChild(container);
+            }
+
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        // Handle the sending of a new message
-        document.getElementById("send-message-btn").addEventListener("click", function() {
-            let userInput = document.getElementById("user-message-input").value;
-            if (userInput.trim() !== "") {
-                addMessage('user', userInput); // Add user message
-                addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?"); // Add bot response
-                document.getElementById("user-message-input").value = ""; // Clear input box
-            }
+        /* INITIAL MESSAGE FROM INDEX.HTML */
+        const params = new URLSearchParams(window.location.search);
+        const firstMsg = params.get("message");
+
+        if (firstMsg) {
+            addMessage("user", firstMsg);
+            const reply = processInput(firstMsg);
+            addMessage("bot", reply, true);
+        }
+
+        /* SEND MESSAGE */
+        function send() {
+            const input = document.getElementById("user-message-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage("user", text);
+            input.value = "";
+
+            const reply = processInput(text);
+            addMessage("bot", reply, true);
+        }
+
+        document.getElementById("send-message-btn").onclick = send;
+        document.getElementById("user-message-input").addEventListener("keydown", e => {
+            if (e.key === "Enter") send();
         });
 
-        // Allow sending messages by pressing Enter
-        document.getElementById("user-message-input").addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                let userInput = document.getElementById("user-message-input").value;
-                if (userInput.trim() !== "") {
-                    addMessage('user', userInput); // Add user message
-                    addMessage('bot', "I'm sorry, I didn't understand that. Can you please rephrase your question?"); // Add bot response
-                    document.getElementById("user-message-input").value = ""; // Clear input box
-                }
-            }
-        });
     </script>
+
 </body>
 </html>
