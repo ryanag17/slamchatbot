@@ -17,7 +17,6 @@ function loadJSONData() {
         exhibitionsData = exhibitions || [];
         slamArtData = art || [];
         mapLocationsData = map || [];
-
         window.__museumLoaded = true;
     })
     .catch(err => {
@@ -28,13 +27,16 @@ function loadJSONData() {
 
 loadJSONData();
 
+function sanitizeInput(input) {
+    return input.toLowerCase().replace(/[.,!?]/g, "");
+}
 
-function processInput(input) {
-    if (!input || typeof input !== "string") {
+function processInput(rawInput) {
+    if (!rawInput || typeof rawInput !== "string") {
         return "I'm sorry, I didn't quite get that. Could you try asking again?";
     }
 
-    input = input.toLowerCase();
+    const input = sanitizeInput(rawInput);
 
     return (
         handleGeneric(input) ||
@@ -91,13 +93,12 @@ function handleMuseumInfo(input) {
 }
 
 
-function handleExhibitions(input) {
-    input = input.toLowerCase();
+function handleExhibitions(rawInput) {
+    const input = sanitizeInput(rawInput);
 
-    // Keyword groups for checking
     const keywordGroups = [
         ["exhibitions", "view"],
-        ["current", "exhibitions"] 
+        ["current", "exhibitions"]
     ];
 
     for (const group of keywordGroups) {
@@ -121,7 +122,9 @@ function handleExhibitions(input) {
 }
 
 
-function handleSlamArt(input) {
+function handleSlamArt(rawInput) {
+    const input = sanitizeInput(rawInput);
+
     for (const art of slamArtData) {
         const titleLower = art.title.toLowerCase();
         if (input.includes(titleLower)) {
@@ -144,7 +147,9 @@ function handleSlamArt(input) {
 }
 
 
-function handleMapLocations(input) {
+function handleMapLocations(rawInput) {
+    const input = sanitizeInput(rawInput);
+
     if (input.includes("where") || input.includes("location")) {
         for (const floor of mapLocationsData) {
             for (const g of floor.galleries) {
@@ -172,6 +177,7 @@ function handleMapLocations(input) {
 
     return null;
 }
+
 
 window.processInput = processInput;
 window.museumInfo = museumInfo;
