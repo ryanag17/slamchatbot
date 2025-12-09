@@ -7,107 +7,64 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <div id="chat-container">
 
+        <!-- HEADER -->
         <header>
             <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
             <h1>SLAM Chatbot</h1>
         </header>
 
+        <!-- MESSAGE AREA -->
         <div id="messages-container">
             <div id="chat-area"></div>
         </div>
 
+        <!-- INPUT AREA -->
         <div id="message-input-container">
-            <input type="text" id="user-message-input" placeholder="Ask me another question...">
+            <input type="text" id="user-message-input" placeholder="Ask me another question..." />
             <button id="send-message-btn">Send</button>
         </div>
 
     </div>
 
-    <script src="chatbot.js"></script>
-
     <script>
+        // GET INITIAL MESSAGE FROM index.html
+        let urlParams = new URLSearchParams(window.location.search);
+        let initialMessage = urlParams.get('message');
 
-        const chatArea = document.getElementById("chat-area");
-
-        /* TYPING ANIMATION */
-        function typeText(element, text, callback) {
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(type, 20);
-                } else {
-                    if (callback) callback();
-                }
+        // SEND INITIAL MESSAGE ON LOAD
+        window.onload = function() {
+            if (initialMessage) {
+                userMessage(initialMessage);
+                botReply(initialMessage);
             }
-            type();
-        }
+        };
 
-        /* ADD MESSAGE */
-        function addMessage(sender, text, animated = false) {
-            const container = document.createElement("div");
-            container.classList.add("chat-message");
-
-            const bubble = document.createElement("div");
-            bubble.classList.add("message-bubble", `${sender}-bubble`);
-
-            const timestamp = document.createElement("div");
-            timestamp.classList.add("timestamp");
-            timestamp.innerText = new Date().toLocaleString();
-
-            if (animated && sender === "bot") {
-                bubble.innerHTML = "";
-                bubble.appendChild(timestamp);
-                container.appendChild(bubble);
-                chatArea.appendChild(container);
-
-                typeText(bubble, text, () => {
-                    bubble.appendChild(timestamp);
-                });
-
-            } else {
-                bubble.innerText = text;
-                bubble.appendChild(timestamp);
-                container.appendChild(bubble);
-                chatArea.appendChild(container);
-            }
-
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        /* INITIAL MESSAGE FROM INDEX.HTML */
-        const params = new URLSearchParams(window.location.search);
-        const firstMsg = params.get("message");
-
-        if (firstMsg) {
-            addMessage("user", firstMsg);
-            const reply = processInput(firstMsg);
-            addMessage("bot", reply, true);
-        }
-
-        /* SEND MESSAGE */
-        function send() {
-            const input = document.getElementById("user-message-input");
-            const text = input.value.trim();
-            if (!text) return;
-
-            addMessage("user", text);
-            input.value = "";
-
-            const reply = processInput(text);
-            addMessage("bot", reply, true);
-        }
-
-        document.getElementById("send-message-btn").onclick = send;
-        document.getElementById("user-message-input").addEventListener("keydown", e => {
-            if (e.key === "Enter") send();
+        // SEND WITH BUTTON
+        document.getElementById("send-message-btn").addEventListener("click", function() {
+            sendUserMessage();
         });
 
+        // SEND WITH ENTER
+        document.getElementById("user-message-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendUserMessage();
+            }
+        });
+
+        function sendUserMessage() {
+            let userInput = document.getElementById("user-message-input").value;
+            if (userInput.trim() !== "") {
+                userMessage(userInput);
+                botReply(userInput);
+                document.getElementById("user-message-input").value = "";
+            }
+        }
     </script>
+
+    <!-- IMPORTANT: LOAD CHATBOT LOGIC -->
+    <script src="chatbot.js"></script>
 
 </body>
 </html>
