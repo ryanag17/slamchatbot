@@ -183,16 +183,18 @@ h1 {
     max-width: 70%;
     word-wrap: break-word;
     position: relative;
+    box-sizing: border-box; /* Ensures padding doesn't overflow */
 }
 
-/* Adjusting user (green) message bubbles with more left padding */
+/* Adjusting user (green) message bubbles */
 .user-bubble {
     background-color: #4CAF50;  /* Green for user messages */
     color: white;
     align-self: flex-end;
     margin-left: auto;
     padding-right: 50px;  /* Fixed padding for user bubbles */
-    padding-left: 15px;  /* Added more left padding */
+    padding-left: 15px;  /* Adjusted padding to avoid overflow */
+    word-wrap: break-word;  /* Ensure the text wraps inside the bubble */
 }
 
 /* Adjusting bot (blue) message bubbles */
