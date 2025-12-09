@@ -12,18 +12,18 @@ function loadJSONData() {
         fetch('backend/data/slam_art.json').then(r => r.json()),
         fetch('backend/data/map_locations.json').then(r => r.json())
     ])
-        .then(([info, exhibitions, art, map]) => {
-            museumInfo = info || {};
-            exhibitionsData = exhibitions || [];
-            slamArtData = art || [];
-            mapLocationsData = map || [];
+    .then(([info, exhibitions, art, map]) => {
+        museumInfo = info || {};
+        exhibitionsData = exhibitions || [];
+        slamArtData = art || [];
+        mapLocationsData = map || [];
 
-            window.__museumLoaded = true;
-        })
-        .catch(err => {
-            console.error("Error loading JSON files:", err);
-            window.__museumLoaded = true;
-        });
+        window.__museumLoaded = true;
+    })
+    .catch(err => {
+        console.error("Error loading JSON files:", err);
+        window.__museumLoaded = true;
+    });
 }
 
 loadJSONData();
@@ -46,8 +46,9 @@ function processInput(input) {
     );
 }
 
+
 function handleGeneric(input) {
-    if (input.includes("hello") || input.includes("hi")) {
+    if (/\b(hello|hi|hey)\b/.test(input)) {
         return "Hello there! How may I help you today?";
     }
 
@@ -64,20 +65,19 @@ function handleGeneric(input) {
 
 
 function handleMuseumInfo(input) {
-
-    if (input.includes("name of the museum")) {
+    if (input.includes("name") && input.includes("museum")) {
         return museumInfo.name
             ? `We are called the ${museumInfo.name}.`
             : "We are the St. Louis Art Museum.";
     }
 
-    if (input.includes("tuesday")) {
+    if (input.includes("tuesday") || input.includes("hours")) {
         return museumInfo.museum_hours?.tuesday
             ? `We are open on Tuesdays from ${museumInfo.museum_hours.tuesday}.`
             : "Please check the museum hours.";
     }
 
-    if (input.includes("free parking")) {
+    if (input.includes("free parking") || input.includes("parking")) {
         return museumInfo.parking?.free || "Parking information is not available right now.";
     }
 
@@ -92,10 +92,8 @@ function handleMuseumInfo(input) {
 
 
 function handleExhibitions(input) {
-
-    if (input.includes("exhibitions on view") || input.includes("what's on view")) {
+    if (input.includes("exhibitions") && input.includes("view")) {
         const onView = exhibitionsData.filter(ex => ex.on_view);
-
         if (onView.length === 0) return "No exhibitions are currently on view.";
 
         const names = onView.map(ex => ex.name).join(", ");
@@ -114,18 +112,17 @@ function handleExhibitions(input) {
 
 
 function handleSlamArt(input) {
-
     for (const art of slamArtData) {
         const titleLower = art.title.toLowerCase();
-
         if (input.includes(titleLower)) {
             return `${art.title} by ${art.artist} (${art.date}). It's located in gallery ${art.gallery}.`;
         }
     }
 
     if (input.includes("gallery")) {
-        const num = input.replace(/[^0-9]/g, "");
-        if (num) {
+        const numMatch = input.match(/\b\d+\b/);
+        if (numMatch) {
+            const num = numMatch[0];
             const items = slamArtData.filter(a => a.gallery == num);
             if (items.length > 0) {
                 return `In gallery ${num}, you can find: ${items.map(a => a.title).join(", ")}.`;
@@ -138,12 +135,10 @@ function handleSlamArt(input) {
 
 
 function handleMapLocations(input) {
-
-    if (input.includes("where is")) {
+    if (input.includes("where") || input.includes("location")) {
         for (const floor of mapLocationsData) {
             for (const g of floor.galleries) {
                 const categoryLower = g.category.toLowerCase();
-
                 if (input.includes(categoryLower)) {
                     return `${g.category} is located on floor ${floor.floor} in galleries ${g.numbers.join(", ")}.`;
                 }
@@ -152,8 +147,9 @@ function handleMapLocations(input) {
     }
 
     if (input.includes("gallery")) {
-        const num = input.replace(/[^0-9]/g, "");
-        if (num) {
+        const numMatch = input.match(/\b\d+\b/);
+        if (numMatch) {
+            const num = numMatch[0];
             for (const floor of mapLocationsData) {
                 for (const g of floor.galleries) {
                     if (g.numbers.includes(num)) {
@@ -166,7 +162,6 @@ function handleMapLocations(input) {
 
     return null;
 }
-
 
 window.processInput = processInput;
 window.museumInfo = museumInfo;
