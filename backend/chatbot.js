@@ -5,9 +5,8 @@
 let museumInfo = {};
 window.__museumLoaded = false;
 
-// Load museum data (YOUR ORIGINAL FUNCTION)
 function loadJSONData() {
-    fetch('../data/museum_info.json')   // FIXED PATH (same as your original)
+    fetch('backend/data/museum_info.json')
         .then(response => {
             if (!response.ok) throw new Error("Failed to load museum_info.json");
             return response.json();
@@ -18,7 +17,7 @@ function loadJSONData() {
         })
         .catch(error => {
             console.error("Error loading museum_info.json:", error);
-            window.__museumLoaded = true; // let chat run anyway
+            window.__museumLoaded = true;
         });
 }
 
