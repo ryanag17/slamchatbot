@@ -25,19 +25,14 @@
 
 </div>
 
-<!-- Load the chatbot logic. Make sure this points to where your chatbot.js actually lives.
-     If you keep chatbot.js in the backend/ folder (as in your provided structure), use backend/chatbot.js -->
 <script src="backend/chatbot.js"></script>
 
 <script>
-/*  Page script: builds UI messages, typing effect, and send/enter handling.
-    Waits until museum data is loaded before calling processInput. */
 
 const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
 
-// formatting helper: produce "MM/DD/YYYY, h:mm AM/PM" - month/day two-digit
 function formatTimestamp(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
@@ -46,11 +41,10 @@ function formatTimestamp(date = new Date()) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12;
     return `${mm}/${dd}/${yyyy}, ${hours}:${minutes} ${ampm}`;
 }
 
-// helper: ensure chatbot.js has loaded museum data before using processInput
 function ensureDataLoaded(callback) {
     if (window.__museumLoaded) return callback();
     const check = setInterval(() => {
@@ -61,7 +55,6 @@ function ensureDataLoaded(callback) {
     }, 50);
 }
 
-// create and append a message element; sender = 'user' or 'bot'
 function appendMessage(sender, text, isTypingPlaceholder = false) {
     const msgWrap = document.createElement('div');
     msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
@@ -70,15 +63,12 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
     bubble.className = 'message-bubble ' + (sender === 'user' ? 'user-bubble' : 'bot-bubble');
 
     if (isTypingPlaceholder) {
-        // placeholder for typing; show a dot indicator initially
         const dots = document.createElement('span');
         dots.className = 'typing-dots';
         dots.textContent = '· · ·';
         bubble.appendChild(dots);
     } else {
-        // use textContent to avoid accidental HTML injection and preserve whitespace with CSS (pre-wrap)
         bubble.textContent = text;
-        // timestamp appended after text
         const timestamp = document.createElement('div');
         timestamp.className = 'timestamp';
         timestamp.textContent = formatTimestamp();
@@ -88,22 +78,17 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
     msgWrap.appendChild(bubble);
     chatArea.appendChild(msgWrap);
 
-    // always scroll to bottom after adding element
     chatArea.scrollTop = chatArea.scrollHeight;
 
     return { msgWrap, bubble };
 }
 
-// typing animation: replace placeholder bubble with typed text
 function typeBotReply(text, typingSpeed = 45) {
-    // create bot placeholder
     const { msgWrap, bubble } = appendMessage('bot', '', true);
 
-    // replace typing dots with typed characters gradually
-    bubble.innerHTML = ''; // clear placeholder
+    bubble.innerHTML = '';
     const typedDiv = document.createElement('div');
     typedDiv.className = 'typed-text';
-    // keep text content usage for correct spacing
     bubble.appendChild(typedDiv);
 
     let i = 0;
@@ -114,7 +99,6 @@ function typeBotReply(text, typingSpeed = 45) {
             chatArea.scrollTop = chatArea.scrollHeight;
             setTimeout(step, typingSpeed);
         } else {
-            // append timestamp after typing completes
             const timestamp = document.createElement('div');
             timestamp.className = 'timestamp';
             timestamp.textContent = formatTimestamp();
@@ -125,31 +109,23 @@ function typeBotReply(text, typingSpeed = 45) {
     step();
 }
 
-// show user message bubble and then bot reply (typed)
 function showUserThenBot(userText) {
     appendMessage('user', userText);
-    // ensure data loaded then compute bot reply and type it
     ensureDataLoaded(() => {
-        // processInput is defined in backend/chatbot.js
         const reply = (typeof processInput === 'function') ? processInput(userText || '') : "Sorry — I'm not ready to answer yet.";
-        // small delay before bot starts typing to look natural
         setTimeout(() => typeBotReply(reply, 45), 350);
     });
 }
 
-// Retrieve any message passed from index.html
 const params = new URLSearchParams(window.location.search);
 const initialMessage = params.get('message');
 
-// IMPORTANT: Wait until chatbot.js has at least initiated load of JSON (it sets window.__museumLoaded true when done)
 window.addEventListener('load', () => {
-    // if index.html passed a message, display it and bot reply
     if (initialMessage) {
         showUserThenBot(initialMessage);
     }
 });
 
-// send function for button and Enter
 function sendFromInput() {
     const text = inputEl.value.trim();
     if (!text) return;
