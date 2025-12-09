@@ -8,11 +8,13 @@
 </head>
 <body>
     <div id="chat-container">
+        <!-- Header with logo and title -->
         <header>
             <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
             <h1>SLAM Chatbot</h1>
         </header>
 
+        <!-- Welcome message area -->
         <div id="welcome-container">
             <h2>Welcome to the SLAM Chatbot</h2>
             <p>What peaks your curiosity today?</p>
@@ -24,17 +26,25 @@
     </div>
 
     <script>
-        document.getElementById("send-btn").addEventListener("click", send);
-        document.getElementById("user-input").addEventListener("keydown", e => {
-            if (e.key === "Enter") send();
-        });
-
-        function send() {
-            const userInput = document.getElementById("user-input").value.trim();
-            if (userInput !== "") {
+        // Event listener for sending the first message
+        document.getElementById("send-btn").addEventListener("click", function() {
+            let userInput = document.getElementById("user-input").value;
+            if (userInput.trim() !== "") {
+                // Send to chat.html with the message
                 window.location.href = "chat.html?message=" + encodeURIComponent(userInput);
             }
-        }
+        });
+
+        // Allow sending messages by pressing Enter
+        document.getElementById("user-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                let userInput = document.getElementById("user-input").value;
+                if (userInput.trim() !== "") {
+                    // Send to chat.html with the message
+                    window.location.href = "chat.html?message=" + encodeURIComponent(userInput);
+                }
+            }
+        });
     </script>
 </body>
 </html>
