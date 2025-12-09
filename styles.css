@@ -124,6 +124,7 @@ h1 {
     overflow-y: auto;
     display: flex;
     flex-direction: column-reverse;  /* Ensure most recent messages are at the bottom */
+    word-wrap: break-word; /* Make sure the text doesn't overflow horizontally */
 }
 
 /* Ensure the input box is at the bottom and doesn't get pushed up */
@@ -132,11 +133,12 @@ h1 {
     justify-content: center;
     gap: 15px;
     position: relative;  /* Remove sticky positioning */
-    bottom: 0;
+    bottom: 10px;  /* Added bottom padding */
     background-color: #fff;
     width: 100%;
     padding-top: 10px;
     margin-top: 20px;
+    padding-bottom: 10px;
 }
 
 /* Same design as the first container for the second input box */
@@ -211,20 +213,6 @@ h1 {
     bottom: -25px;
     left: 20px;
     white-space: nowrap; /* Keep the timestamp on one line */
-}
-
-/* Scrollbar style for vertical scrolling */
-#messages-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-#messages-container::-webkit-scrollbar-thumb {
-    background-color: #3498db;
-    border-radius: 10px;
-}
-
-#messages-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
 }
 
 /* Fade-in effect for new messages */
