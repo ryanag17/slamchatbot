@@ -5,13 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>SLAM Chatbot</title>
     <link rel="stylesheet" href="styles.css" />
-
-    <!-- NLP libraries (CDN) -->
-    <!-- compromise: lightweight NLP (tokenization, POS, named entities, normalization) -->
-    <script src="https://unpkg.com/compromise@14.12.1/builds/compromise.min.js"></script>
-
-    <!-- Fuse.js: fuzzy-search / approximate string matching -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
 </head>
 <body>
 <div id="chat-container">
@@ -32,11 +25,22 @@
 
 </div>
 
-<!-- chatbot logic (client-side JS using NLP libs) -->
+<!-- CDN libraries for NLP and fuzzy matching -->
+<!-- compromise (nlp/lemmatization/tokenization) -->
+<script src="https://unpkg.com/compromise@13.11.3/builds/compromise.min.js"></script>
+<!-- Fuse.js for fuzzy search -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+<!-- dayjs for date handling -->
+<script src="https://unpkg.com/dayjs@1.11.9/dayjs.min.js"></script>
+<script src="https://unpkg.com/dayjs@1.11.9/plugin/weekday.js"></script>
+<script>
+  dayjs.extend(dayjs_plugin_weekday);
+</script>
+
+<!-- Your bot logic (must be loaded AFTER the CDNs above) -->
 <script src="backend/chatbot.js"></script>
 
 <script>
-
 const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
@@ -76,10 +80,10 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
         dots.textContent = '· · ·';
         bubble.appendChild(dots);
     } else {
-        // Use textContent and preserve spacing; typed text uses .typed-text
-        const p = document.createElement('div');
-        p.textContent = text;
-        bubble.appendChild(p);
+        // put main text in a div to preserve newlines and spacing
+        const textDiv = document.createElement('div');
+        textDiv.textContent = text;
+        bubble.appendChild(textDiv);
 
         const timestamp = document.createElement('div');
         timestamp.className = 'timestamp';
@@ -98,6 +102,7 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
 function typeBotReply(text, typingSpeed = 45) {
     const { msgWrap, bubble } = appendMessage('bot', '', true);
 
+    // replace with typed text
     bubble.innerHTML = '';
     const typedDiv = document.createElement('div');
     typedDiv.className = 'typed-text';
@@ -106,7 +111,6 @@ function typeBotReply(text, typingSpeed = 45) {
     let i = 0;
     function step() {
         if (i < text.length) {
-            // append one character at a time (keeps spaces intact)
             typedDiv.textContent += text.charAt(i);
             i++;
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -126,8 +130,9 @@ function showUserThenBot(userText) {
     appendMessage('user', userText);
     ensureDataLoaded(() => {
         const reply = (typeof processInput === 'function') ? processInput(userText || '') : "Sorry — I'm not ready to answer yet.";
-        // small delay before bot starts typing
-        setTimeout(() => typeBotReply(reply, 45), 350);
+        // slower typing for long messages (demo)
+        const speed = 40;
+        setTimeout(() => typeBotReply(reply, speed), 350);
     });
 }
 
