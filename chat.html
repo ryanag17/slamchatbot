@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>SLAM Chatbot</title>
     <link rel="stylesheet" href="styles.css" />
+
+    <!-- NLP libraries (CDN) -->
+    <!-- compromise: lightweight NLP (tokenization, POS, named entities, normalization) -->
+    <script src="https://unpkg.com/compromise@14.12.1/builds/compromise.min.js"></script>
+
+    <!-- Fuse.js: fuzzy-search / approximate string matching -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
 </head>
 <body>
 <div id="chat-container">
@@ -25,6 +32,7 @@
 
 </div>
 
+<!-- chatbot logic (client-side JS using NLP libs) -->
 <script src="backend/chatbot.js"></script>
 
 <script>
@@ -68,7 +76,11 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
         dots.textContent = '· · ·';
         bubble.appendChild(dots);
     } else {
-        bubble.textContent = text;
+        // Use textContent and preserve spacing; typed text uses .typed-text
+        const p = document.createElement('div');
+        p.textContent = text;
+        bubble.appendChild(p);
+
         const timestamp = document.createElement('div');
         timestamp.className = 'timestamp';
         timestamp.textContent = formatTimestamp();
@@ -94,6 +106,7 @@ function typeBotReply(text, typingSpeed = 45) {
     let i = 0;
     function step() {
         if (i < text.length) {
+            // append one character at a time (keeps spaces intact)
             typedDiv.textContent += text.charAt(i);
             i++;
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -113,6 +126,7 @@ function showUserThenBot(userText) {
     appendMessage('user', userText);
     ensureDataLoaded(() => {
         const reply = (typeof processInput === 'function') ? processInput(userText || '') : "Sorry — I'm not ready to answer yet.";
+        // small delay before bot starts typing
         setTimeout(() => typeBotReply(reply, 45), 350);
     });
 }
