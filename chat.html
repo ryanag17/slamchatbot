@@ -25,19 +25,14 @@
 
 </div>
 
-<!-- CDN libraries for NLP and fuzzy matching -->
-<!-- compromise (nlp/lemmatization/tokenization) -->
 <script src="https://unpkg.com/compromise@13.11.3/builds/compromise.min.js"></script>
-<!-- Fuse.js for fuzzy search -->
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
-<!-- dayjs for date handling -->
 <script src="https://unpkg.com/dayjs@1.11.9/dayjs.min.js"></script>
 <script src="https://unpkg.com/dayjs@1.11.9/plugin/weekday.js"></script>
 <script>
   dayjs.extend(dayjs_plugin_weekday);
 </script>
 
-<!-- Your bot logic (must be loaded AFTER the CDNs above) -->
 <script src="backend/chatbot.js"></script>
 
 <script>
@@ -80,7 +75,6 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
         dots.textContent = '· · ·';
         bubble.appendChild(dots);
     } else {
-        // put main text in a div to preserve newlines and spacing
         const textDiv = document.createElement('div');
         textDiv.textContent = text;
         bubble.appendChild(textDiv);
@@ -102,7 +96,6 @@ function appendMessage(sender, text, isTypingPlaceholder = false) {
 function typeBotReply(text, typingSpeed = 45) {
     const { msgWrap, bubble } = appendMessage('bot', '', true);
 
-    // replace with typed text
     bubble.innerHTML = '';
     const typedDiv = document.createElement('div');
     typedDiv.className = 'typed-text';
@@ -130,7 +123,6 @@ function showUserThenBot(userText) {
     appendMessage('user', userText);
     ensureDataLoaded(() => {
         const reply = (typeof processInput === 'function') ? processInput(userText || '') : "Sorry — I'm not ready to answer yet.";
-        // slower typing for long messages (demo)
         const speed = 40;
         setTimeout(() => typeBotReply(reply, speed), 350);
     });
