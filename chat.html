@@ -9,28 +9,29 @@
 <body>
 <div id="chat-container">
 
-    <header>
-        <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
-        <h1>SLAM Chatbot</h1>
-    </header>
+<header>
+    <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
+    <h1>SLAM Chatbot</h1>
+</header>
 
-    <div id="messages-container">
-        <div id="chat-area" aria-live="polite" role="log"></div>
-    </div>
+<div id="messages-container">
+    <div id="chat-area" aria-live="polite" role="log"></div>
+</div>
 
-    <div id="message-input-container">
-        <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
-        <button id="send-message-btn">Send</button>
-    </div>
+<div id="message-input-container">
+    <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
+    <button id="send-message-btn">Send</button>
+</div>
 
 </div>
 
+<!-- LIBS (unchanged) -->
 <script src="https://unpkg.com/compromise@13.11.3/builds/compromise.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
 <script src="https://unpkg.com/dayjs@1.11.9/dayjs.min.js"></script>
 <script src="https://unpkg.com/dayjs@1.11.9/plugin/weekday.js"></script>
 <script>
-  dayjs.extend(dayjs_plugin_weekday);
+dayjs.extend(dayjs_plugin_weekday);
 </script>
 
 <script src="backend/chatbot.js"></script>
@@ -40,6 +41,10 @@ const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
 
+const STORAGE_KEY = "slam_chat_history";
+const EXPIRE_MS = 24 * 60 * 60 * 1000;
+
+/* ---------------- TIMESTAMP ---------------- */
 function formatTimestamp(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
@@ -47,106 +52,124 @@ function formatTimestamp(date = new Date()) {
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
+    hours = hours % 12 || 12;
     return `${mm}/${dd}/${yyyy}, ${hours}:${minutes} ${ampm}`;
 }
 
-function ensureDataLoaded(callback) {
-    if (window.__museumLoaded) return callback();
-    const check = setInterval(() => {
-        if (window.__museumLoaded) {
-            clearInterval(check);
-            callback();
+/* ---------------- STORAGE ---------------- */
+function loadHistory() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!raw) return [];
+        if (Date.now() - raw.savedAt > EXPIRE_MS) {
+            localStorage.removeItem(STORAGE_KEY);
+            return [];
         }
-    }, 50);
+        return raw.messages || [];
+    } catch {
+        return [];
+    }
 }
 
-function appendMessage(sender, text, isTypingPlaceholder = false) {
-    const msgWrap = document.createElement('div');
-    msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+function saveHistory(messages) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        messages
+    }));
+}
+
+/* ---------------- UI ---------------- */
+function appendMessage(sender, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble ' + (sender === 'user' ? 'user-bubble' : 'bot-bubble');
 
-    if (isTypingPlaceholder) {
-        const dots = document.createElement('span');
-        dots.className = 'typing-dots';
-        dots.textContent = '· · ·';
-        bubble.appendChild(dots);
-    } else {
-        const textDiv = document.createElement('div');
-        textDiv.textContent = text;
-        bubble.appendChild(textDiv);
+    const textDiv = document.createElement('div');
+    textDiv.textContent = text;
+    bubble.appendChild(textDiv);
 
-        const timestamp = document.createElement('div');
-        timestamp.className = 'timestamp';
-        timestamp.textContent = formatTimestamp();
-        bubble.appendChild(timestamp);
-    }
+    const ts = document.createElement('div');
+    ts.className = 'timestamp';
+    ts.textContent = formatTimestamp();
+    bubble.appendChild(ts);
 
-    msgWrap.appendChild(bubble);
-    chatArea.appendChild(msgWrap);
-
+    wrap.appendChild(bubble);
+    chatArea.appendChild(wrap);
     chatArea.scrollTop = chatArea.scrollHeight;
-
-    return { msgWrap, bubble };
 }
 
-function typeBotReply(text, typingSpeed = 45) {
-    const { msgWrap, bubble } = appendMessage('bot', '', true);
+function typeBotReply(text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-message bot-message';
 
-    bubble.innerHTML = '';
-    const typedDiv = document.createElement('div');
-    typedDiv.className = 'typed-text';
-    bubble.appendChild(typedDiv);
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble bot-bubble';
+
+    const typed = document.createElement('div');
+    typed.className = 'typed-text';
+    bubble.appendChild(typed);
+
+    wrap.appendChild(bubble);
+    chatArea.appendChild(wrap);
 
     let i = 0;
     function step() {
         if (i < text.length) {
-            typedDiv.textContent += text.charAt(i);
-            i++;
+            typed.textContent += text.charAt(i++);
             chatArea.scrollTop = chatArea.scrollHeight;
-            setTimeout(step, typingSpeed);
+            setTimeout(step, 35);
         } else {
-            const timestamp = document.createElement('div');
-            timestamp.className = 'timestamp';
-            timestamp.textContent = formatTimestamp();
-            bubble.appendChild(timestamp);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            const ts = document.createElement('div');
+            ts.className = 'timestamp';
+            ts.textContent = formatTimestamp();
+            bubble.appendChild(ts);
         }
     }
     step();
 }
 
-function showUserThenBot(userText) {
-    appendMessage('user', userText);
+/* ---------------- LOGIC ---------------- */
+function handleUserMessage(text) {
+    appendMessage('user', text);
+
     ensureDataLoaded(() => {
-        const reply = (typeof processInput === 'function') ? processInput(userText || '') : "Sorry — I'm not ready to answer yet.";
-        const speed = 40;
-        setTimeout(() => typeBotReply(reply, speed), 350);
+        const reply = typeof processInput === 'function'
+            ? processInput(text)
+            : "Sorry — I'm not ready yet.";
+
+        setTimeout(() => typeBotReply(reply), 300);
+
+        history.push({ sender: "user", text });
+        history.push({ sender: "bot", text: reply });
+        saveHistory(history);
     });
 }
 
-const params = new URLSearchParams(window.location.search);
-const initialMessage = params.get('message');
+/* ---------------- INIT ---------------- */
+let history = loadHistory();
 
-window.addEventListener('load', () => {
-    if (initialMessage) {
-        showUserThenBot(initialMessage);
-    }
-});
+// restore chat
+history.forEach(m => appendMessage(m.sender, m.text));
 
+// initial message from index.html
+const first = localStorage.getItem("slam_initial_message");
+if (first) {
+    localStorage.removeItem("slam_initial_message");
+    handleUserMessage(first);
+}
+
+/* ---------------- EVENTS ---------------- */
 function sendFromInput() {
     const text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
-    showUserThenBot(text);
-    inputEl.focus();
+    handleUserMessage(text);
 }
 
 sendBtn.addEventListener('click', sendFromInput);
-inputEl.addEventListener('keydown', (e) => {
+inputEl.addEventListener('keydown', e => {
     if (e.key === 'Enter') sendFromInput();
 });
 </script>

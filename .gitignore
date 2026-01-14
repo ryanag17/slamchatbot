@@ -1,0 +1,10 @@
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# Generated files
+backend/static/generated/*.png
