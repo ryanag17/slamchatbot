@@ -4,6 +4,3 @@ spacy
 langdetect
 opencv-python
 numpy
-transformers
-torch
-sentencepiece
