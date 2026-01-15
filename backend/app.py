@@ -32,12 +32,15 @@ def api_respond():
         "image_url": out.get("image_url")
     })
 
-# Serve generated images from backend/static/...
+# Serve backend/static (including generated images)
 @app.get("/backend/static/<path:filename>")
 def serve_backend_static(filename):
     static_dir = os.path.join(BACKEND_DIR, "static")
     return send_from_directory(static_dir, filename)
 
 if __name__ == "__main__":
-    # nginx should proxy /api/* to this
-    app.run(host="127.0.0.1", port=8080, debug=False)
+    # IMPORTANT:
+    # - 0.0.0.0 lets the VM accept external traffic
+    # - Keep port 8080; just open it in GCP firewall
+    port = int(os.environ.get("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port, debug=False)

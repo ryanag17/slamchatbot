@@ -10,8 +10,6 @@ from rapidfuzz import fuzz, process
 
 import spacy
 
-# IMPORTANT: uses your existing map_utils.py
-# It must provide: get_gallery_map_image(gallery_token, map_locations) -> {"image_url": "..."} | None
 from map_utils import get_gallery_map_image
 
 
@@ -31,8 +29,7 @@ EXHIBITIONS = _load_json(os.path.join(DATA_DIR, "exhibitions.json"), [])
 SLAM_ART = _load_json(os.path.join(DATA_DIR, "slam_art.json"), [])
 MAP_LOCATIONS = _load_json(os.path.join(DATA_DIR, "map_locations.json"), [])
 
-# spaCy model
-# You must install: python -m spacy download en_core_web_sm
+# spaCy model (must exist on the VM)
 _NLP = spacy.load("en_core_web_sm")
 
 WEEKDAYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
@@ -55,17 +52,14 @@ def _extract_gallery_token(text: str) -> Optional[str]:
     """
     t = (text or "").upper()
 
-    # Prefer explicit "gallery xxx"
     m = re.search(r"\bGALLERY\s+([0-9]{2,3}[A-Z]?)\b", t)
     if m:
         return m.group(1)
 
-    # "room 219"
     m = re.search(r"\b(ROOM|RM)\s+([0-9]{2,3}[A-Z]?)\b", t)
     if m:
         return m.group(2)
 
-    # Otherwise any standalone 2-3 digit(+optional letter)
     m = re.search(r"\b([0-9]{2,3}[A-Z]?)\b", t)
     if m:
         return m.group(1)
@@ -92,43 +86,34 @@ def _extract_weekday(norm: str) -> Optional[str]:
 
 
 def _hours_for_day(day: str) -> Optional[str]:
-    hours = (MUSEUM_INFO.get("museum_hours") or {}).get(day)
-    return hours
+    hours = (MUSEUM_INFO.get("museum_hours") or {})
+    return hours.get(day)
 
 
 def _format_hours_answer(norm: str) -> Optional[str]:
-    # If they ask for a specific weekday OR today/tomorrow
     wd = _extract_weekday(norm)
     if wd:
-        hours = _hours_for_day(wd)
+        h = _hours_for_day(wd)
+        if h:
+            return f"Hours on {wd.title()}: {h}."
+    if "hours" in norm or "open" in norm or "close" in norm:
+        hours = (MUSEUM_INFO.get("museum_hours") or {})
         if hours:
-            # If they asked "close" or "closing", we still return the day's hours
-            return f"On {wd.title()}, the museum hours are: {hours}."
-        return f"I don’t have hours listed for {wd.title()}."
-
-    # If they ask explicitly about closing but didn't specify a day
-    if re.search(r"\b(close|closing)\b", norm):
-        return "Which day are you asking about (for example: 'When do you close on Friday?')"
-
-    # General weekly hours summary ONLY if they ask general “hours”
-    if any(k in norm for k in ["hours", "opening hours", "open hours", "when are you open"]):
-        mh = MUSEUM_INFO.get("museum_hours") or {}
-        parts = []
-        for wd in WEEKDAYS:
-            if wd in mh:
-                parts.append(f"{wd.title()}: {mh[wd]}")
-        if parts:
-            return "Museum hours — " + "; ".join(parts) + "."
-
+            lines = []
+            for d in WEEKDAYS:
+                if d in hours:
+                    lines.append(f"{d.title()}: {hours[d]}")
+            if lines:
+                return "Museum hours:\n" + "\n".join(lines)
     return None
 
 
 def _museum_info_answer(norm: str) -> Optional[str]:
-    # IMPORTANT: we do NOT treat any "where" as museum address.
-    # We only respond with address when user clearly refers to the museum itself.
-
-    if any(k in norm for k in ["museum name", "name of the museum", "what is the museum called", "what are you called"]):
-        return f"We are called the {MUSEUM_INFO.get('name','St. Louis Art Museum')}."
+    if any(k in norm for k in ["museum", "what is slam", "about slam", "tell me about slam", "about the museum"]):
+        desc = MUSEUM_INFO.get("description") or MUSEUM_INFO.get("location_description")
+        if desc:
+            return desc
+        return "I don’t have a description for the museum right now."
 
     if any(k in norm for k in ["address", "museum address", "where is the museum", "where are you located", "museum location"]):
         loc = MUSEUM_INFO.get("location")
@@ -156,7 +141,6 @@ def _museum_info_answer(norm: str) -> Optional[str]:
 
 
 def _exhibitions_answer(norm: str) -> Optional[str]:
-    # On view (this is what you said broke — this restores it)
     if any(p in norm for p in [
         "on view", "currently on view", "current exhibitions",
         "what exhibitions are on view", "what's on view", "whats on view", "what is on view"
@@ -167,7 +151,6 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
         names = ", ".join([e.get("name", "Untitled") for e in on_view])
         return f"Exhibitions currently on view: {names}."
 
-    # By ID EXH###
     m = re.search(r"\bEXH\d{3}\b", norm.upper())
     if m:
         ex_id = m.group(0)
@@ -175,7 +158,6 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
         if ex:
             return f"{ex.get('name','Exhibition')} runs from {ex.get('start_date','N/A')} to {ex.get('end_date','N/A')}. {ex.get('description','')}".strip()
 
-    # Fuzzy name match if they mention exhibition/exhibit
     if "exhibition" in norm or "exhibit" in norm:
         names = [e.get("name","") for e in EXHIBITIONS if e.get("name")]
         if names:
@@ -188,7 +170,6 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
 
 
 def _art_answer(norm: str) -> Optional[str]:
-    # Title fuzzy
     titles = [a.get("title","") for a in SLAM_ART if a.get("title")]
     if titles:
         best = process.extractOne(norm, titles, scorer=fuzz.WRatio)
@@ -196,7 +177,6 @@ def _art_answer(norm: str) -> Optional[str]:
             art = next(a for a in SLAM_ART if a.get("title") == best[0])
             return f"{art.get('title')} by {art.get('artist','Unknown')} ({art.get('date','N/A')}). It’s located in gallery {art.get('gallery','N/A')}. {art.get('description','')}".strip()
 
-    # Artist query patterns
     if any(k in norm for k in ["works by", "pieces by", "paintings by", "artist", "show me works by"]):
         artists = list({(a.get("artist") or "") for a in SLAM_ART if a.get("artist")})
         if artists:
@@ -213,17 +193,8 @@ def _art_answer(norm: str) -> Optional[str]:
 
 
 def _map_answer(norm: str) -> Optional[Dict[str, Any]]:
-    """
-    Location queries:
-    - "Where is gallery 219?"
-    - "Find 236E"
-    - "Where is room 212S?"
-    Returns a dict with {text, image_url}
-    """
     token = _extract_gallery_token(norm)
 
-    # Only treat as a location request if they actually ask location-ish things
-    # (prevents random "219" in other contexts)
     if token and any(k in norm for k in ["where", "located", "find", "how do i get", "map", "gallery", "room", "rm"]):
         img_payload = get_gallery_map_image(token, MAP_LOCATIONS)
         if img_payload and img_payload.get("image_url"):
@@ -251,7 +222,10 @@ def _map_answer(norm: str) -> Optional[Dict[str, Any]]:
             best = process.extractOne(norm, cat_names, scorer=fuzz.WRatio)
             if best and best[1] >= 80:
                 cat, floor, nums, img = next(c for c in cats if c[0] == best[0])
-                img_url = f"/{img}" if img else f"/floor{floor}.png"
+
+                # IMPORTANT: your floor PNGs are in backend/static/
+                img_url = f"/backend/static/{img}" if img else f"/backend/static/floor{floor}.png"
+
                 return {
                     "text": f"{cat} is on floor {floor} in galleries {', '.join([str(n) for n in nums])}.",
                     "image_url": img_url
@@ -269,6 +243,18 @@ def _greeting_answer(norm: str) -> Optional[str]:
     return None
 
 
+def _should_skip_langdetect(raw: str) -> bool:
+    # langdetect is unreliable for very short inputs like "Hi", "Hello!", "Thanks"
+    s = (raw or "").strip()
+    if not s:
+        return True
+    if len(s) <= 6:
+        return True
+    if re.match(r"^(hi|hello|hey|thanks|thank you)\b", s.strip().lower()):
+        return True
+    return False
+
+
 def _translate_in(text: str) -> Tuple[str, Optional[str]]:
     """
     Detect language. If not English, translate to English for processing.
@@ -276,6 +262,9 @@ def _translate_in(text: str) -> Tuple[str, Optional[str]]:
     """
     raw = (text or "").strip()
     if not raw:
+        return raw, None
+
+    if _should_skip_langdetect(raw):
         return raw, None
 
     try:
@@ -303,21 +292,8 @@ def _translate_out(text: str, target_lang: Optional[str]) -> str:
 
 
 def generate_response(user_text: str) -> Dict[str, Any]:
-    """
-    Main entry point used by Flask.
-    Returns:
-      { "text": "...", "image_url": "... or None", "detected_lang": "...", "translated": true/false }
-    """
     en_text, orig_lang = _translate_in(user_text)
     norm = _normalize(en_text)
-
-    # ROUTING ORDER MATTERS:
-    # 1) greeting
-    # 2) map location (so "where is gallery 219" does NOT become museum address)
-    # 3) exhibitions
-    # 4) art
-    # 5) museum info
-    # 6) fallback
 
     greeting = _greeting_answer(norm)
     if greeting:
@@ -354,6 +330,5 @@ def generate_response(user_text: str) -> Dict[str, Any]:
     return {"text": out_text, "image_url": None, "detected_lang": orig_lang or "en", "translated": bool(orig_lang)}
 
 
-# Convenience alias (if your app.py used respond())
 def respond(text: str) -> Dict[str, Any]:
     return generate_response(text)
