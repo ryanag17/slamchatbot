@@ -30,8 +30,8 @@ const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
 
-const STORAGE_KEY = "slam_chat_history_v3";
-const STORAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const STORAGE_KEY = "slam_chat_history_v4";
+const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 function formatTimestamp(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -49,17 +49,12 @@ function loadHistory() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return { createdAt: Date.now(), messages: [] };
-
         const parsed = JSON.parse(raw);
-        if (!parsed.createdAt || !Array.isArray(parsed.messages)) {
-            return { createdAt: Date.now(), messages: [] };
-        }
-
+        if (!parsed.createdAt || !Array.isArray(parsed.messages)) return { createdAt: Date.now(), messages: [] };
         if (Date.now() - parsed.createdAt > STORAGE_TTL_MS) {
             localStorage.removeItem(STORAGE_KEY);
             return { createdAt: Date.now(), messages: [] };
         }
-
         return parsed;
     } catch {
         return { createdAt: Date.now(), messages: [] };
@@ -111,10 +106,10 @@ function appendMessage(sender, text, opts = {}) {
     chatArea.appendChild(msgWrap);
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return { bubble, msgWrap };
+    return { bubble };
 }
 
-function renderSuggestions(containerEl, suggestions) {
+function renderSuggestions(bubbleEl, suggestions) {
     if (!Array.isArray(suggestions) || suggestions.length === 0) return;
 
     const wrap = document.createElement("div");
@@ -125,19 +120,15 @@ function renderSuggestions(containerEl, suggestions) {
         btn.type = "button";
         btn.className = "suggestion-btn";
         btn.textContent = s;
-
-        btn.addEventListener("click", () => {
-            showUserThenBot(s);
-        });
-
+        btn.addEventListener("click", () => showUserThenBot(s));
         wrap.appendChild(btn);
     }
 
-    containerEl.appendChild(wrap);
+    bubbleEl.appendChild(wrap);
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-function typeBotReply(text, typingSpeed = 30, after = null) {
+function typeBotReply(text, typingSpeed = 25, after = null) {
     const { bubble } = appendMessage('bot', '', { isTypingPlaceholder: true });
 
     bubble.innerHTML = '';
@@ -197,7 +188,7 @@ async function showUserThenBot(userText) {
     const imgUrl = payload?.image_url || null;
     const suggestions = payload?.suggestions || [];
 
-    typeBotReply(replyText, 25, (bubble) => {
+    typeBotReply(replyText, 20, (bubble) => {
         if (imgUrl) {
             const img = document.createElement("img");
             img.className = "map-image";
@@ -205,8 +196,6 @@ async function showUserThenBot(userText) {
             img.alt = "Map";
             bubble.appendChild(img);
         }
-
-        // ✅ SHOW SUGGESTIONS
         renderSuggestions(bubble, suggestions);
     });
 
@@ -240,10 +229,6 @@ inputEl.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('load', () => {
-    if (window.location.search && window.location.search.includes("message=")) {
-        history.replaceState({}, "", "chat.html");
-    }
-
     renderHistory();
 
     const initial = sessionStorage.getItem("slam_initial_message");

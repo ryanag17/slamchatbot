@@ -169,7 +169,7 @@ h1 { font-size: 24px; margin: 0; }
     display: block;
 }
 
-/* Suggestions under bot reply */
+/* Nicer suggestion buttons */
 .suggestions-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -180,34 +180,31 @@ h1 { font-size: 24px; margin: 0; }
 .suggestion-btn {
     appearance: none;
     border: 1px solid rgba(255, 255, 255, 0.40);
-    background: rgba(255, 255, 255, 0.16);
+    background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.14));
     color: #fff;
-    padding: 10px 12px;
+    padding: 10px 14px;
     border-radius: 999px;
     cursor: pointer;
     font-size: 13px;
     line-height: 1.1;
     transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-    backdrop-filter: blur(6px);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+    backdrop-filter: blur(8px);
 }
 
 .suggestion-btn:hover {
-    background: rgba(255, 255, 255, 0.26);
-    border-color: rgba(255, 255, 255, 0.60);
+    background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.20));
+    border-color: rgba(255, 255, 255, 0.65);
     transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.26);
 }
 
 .suggestion-btn:active {
     transform: translateY(0px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-}
-
-.suggestion-btn:focus {
-    outline: none;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.22);
 }
 
 .suggestion-btn:focus-visible {
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 10px 24px rgba(0,0,0,0.22);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 14px 34px rgba(0,0,0,0.26);
 }
