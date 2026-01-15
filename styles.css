@@ -173,21 +173,41 @@ h1 { font-size: 24px; margin: 0; }
 .suggestions-wrap {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .suggestion-btn {
-    border: 1px solid rgba(255,255,255,0.55);
-    background: rgba(255,255,255,0.2);
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    background: rgba(255, 255, 255, 0.16);
     color: #fff;
-    padding: 8px 10px;
+    padding: 10px 12px;
     border-radius: 999px;
     cursor: pointer;
     font-size: 13px;
     line-height: 1.1;
+    transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    backdrop-filter: blur(6px);
 }
 
 .suggestion-btn:hover {
-    background: rgba(255,255,255,0.35);
+    background: rgba(255, 255, 255, 0.26);
+    border-color: rgba(255, 255, 255, 0.60);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+
+.suggestion-btn:active {
+    transform: translateY(0px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.suggestion-btn:focus {
+    outline: none;
+}
+
+.suggestion-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 10px 24px rgba(0,0,0,0.22);
 }
