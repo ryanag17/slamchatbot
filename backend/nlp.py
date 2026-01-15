@@ -243,15 +243,28 @@ def _greeting_answer(norm: str) -> Optional[str]:
     return None
 
 
+# ============================
+# FIXED TRANSLATION LOGIC HERE
+# ============================
+
 def _should_skip_langdetect(raw: str) -> bool:
-    # langdetect is unreliable for very short inputs like "Hi", "Hello!", "Thanks"
+    """
+    langdetect is unreliable for short inputs and English greetings.
+    We skip detection aggressively so English does NOT get misdetected as Italian/etc.
+    """
     s = (raw or "").strip()
     if not s:
         return True
-    if len(s) <= 6:
+
+    # Aggressive: short-ish messages are where langdetect lies the most.
+    # This covers "Hello!", "Hello there!", "Thanks!", etc.
+    if len(s) <= 20:
         return True
-    if re.match(r"^(hi|hello|hey|thanks|thank you)\b", s.strip().lower()):
+
+    # Obvious English greetings / thanks (even if longer)
+    if re.match(r"^(hi|hello|hey|yo|hiya|greetings|thanks|thank you)\b", s.lower()):
         return True
+
     return False
 
 
@@ -264,12 +277,23 @@ def _translate_in(text: str) -> Tuple[str, Optional[str]]:
     if not raw:
         return raw, None
 
+    # If detection is unsafe, assume English
     if _should_skip_langdetect(raw):
+        return raw, None
+
+    # Extra safety: if it looks like normal English, force English.
+    looks_ascii = raw.isascii()
+    has_english_words = bool(re.search(r"\b(the|and|is|are|you|i|we|to|of|in|on|for|help|where|what|when|how)\b", raw.lower()))
+    if looks_ascii and has_english_words:
         return raw, None
 
     try:
         lang = detect(raw)
     except Exception:
+        return raw, None
+
+    # Hard override: if langdetect claims a Romance language but the message looks English, keep English.
+    if looks_ascii and has_english_words and lang in {"it", "es", "pt", "fr", "de", "nl"}:
         return raw, None
 
     if lang == "en":
