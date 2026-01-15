@@ -18,6 +18,7 @@ def api_health():
 def api_respond():
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
+
     if not text:
         return jsonify({"text": "Please type a message.", "image_url": None, "suggestions": []})
 
@@ -39,9 +40,6 @@ def serve_backend_static(filename):
     static_dir = os.path.join(BACKEND_DIR, "static")
     return send_from_directory(static_dir, filename)
 
-if __name__ == "_main_":
-    # IMPORTANT:
-    # - 0.0.0.0 lets the VM accept external traffic
-    # - Keep port 8080; just open it in GCP firewall
+if __name__ == "__main__":  # <-- THIS is the critical fix
     port = int(os.environ.get("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)

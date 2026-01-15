@@ -9,6 +9,7 @@
 <body>
   <div id="chat-container">
     <header>
+      <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
       <h1>SLAM Chatbot</h1>
     </header>
 
@@ -28,8 +29,8 @@ const input = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
 const suggestionsEl = document.getElementById("suggestions");
 
-// If the page is served on port 8080 already, use same-origin.
-// If it’s served on port 80 (or anything else), point API calls to :8080.
+// If page is served on :8080, same-origin is fine.
+// If page is served on :80 (or anything else), send API to :8080.
 const API_BASE =
   (window.location.port === "8080")
     ? ""
@@ -61,27 +62,34 @@ function renderSuggestions(list) {
   });
 }
 
-async function sendMessage() {
-  const text = (input.value || "").trim();
+async function callBackend(text) {
+  const res = await fetch(`${API_BASE}/api/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
+
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${t}`);
+  }
+
+  return await res.json();
+}
+
+async function sendMessage(textOverride) {
+  const text = (typeof textOverride === "string")
+    ? textOverride.trim()
+    : (input.value || "").trim();
+
   if (!text) return;
 
-  input.value = "";
+  if (typeof textOverride !== "string") input.value = "";
   appendBubble("user", text);
 
   let data;
   try {
-    const res = await fetch(`${API_BASE}/api/respond`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
-    });
-
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status} ${t}`);
-    }
-
-    data = await res.json();
+    data = await callBackend(text);
   } catch (e) {
     console.error("API error:", e);
     appendBubble("bot", "Backend is not responding. Make sure Flask is running.");
@@ -107,10 +115,19 @@ async function sendMessage() {
   renderSuggestions(sugg);
 }
 
-sendBtn.addEventListener("click", sendMessage);
+sendBtn.addEventListener("click", () => sendMessage());
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage();
 });
+
+// AUTO-SEND the message coming from index.html
+(function autoSendFromIndex() {
+  const initial = sessionStorage.getItem("slam_initial_message");
+  if (initial) {
+    sessionStorage.removeItem("slam_initial_message");
+    sendMessage(initial);
+  }
+})();
 </script>
 </body>
 </html>
