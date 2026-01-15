@@ -1,4 +1,5 @@
 # backend/map_utils.py
+import json
 import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
@@ -8,19 +9,54 @@ import numpy as np
 import pytesseract
 from PIL import Image, ImageDraw
 
-
 BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BACKEND_DIR, "static")
 GEN_DIR = os.path.join(STATIC_DIR, "generated")
 os.makedirs(GEN_DIR, exist_ok=True)
 
+# In-memory cache: floor_map_path -> { "216": [x,y], ... }
+_FLOOR_INDEX_CACHE: Dict[str, Dict[str, Tuple[int, int]]] = {}
+
+# Persisted cache on disk (so reboot doesn’t reset speed)
+_CACHE_FILE = os.path.join(GEN_DIR, "ocr_gallery_centers_cache.json")
+
+
+def _load_disk_cache() -> Dict[str, Dict[str, Tuple[int, int]]]:
+    try:
+        with open(_CACHE_FILE, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        out: Dict[str, Dict[str, Tuple[int, int]]] = {}
+        for k, v in raw.items():
+            if isinstance(v, dict):
+                out[k] = {}
+                for tok, xy in v.items():
+                    if (
+                        isinstance(tok, str)
+                        and isinstance(xy, list)
+                        and len(xy) == 2
+                        and isinstance(xy[0], int)
+                        and isinstance(xy[1], int)
+                    ):
+                        out[k][tok] = (xy[0], xy[1])
+        return out
+    except Exception:
+        return {}
+
+
+def _save_disk_cache(cache: Dict[str, Dict[str, Tuple[int, int]]]) -> None:
+    try:
+        serial = {k: {tok: [xy[0], xy[1]] for tok, xy in v.items()} for k, v in cache.items()}
+        with open(_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(serial, f)
+    except Exception:
+        pass
+
+
+# Load disk cache once at import
+_FLOOR_INDEX_CACHE.update(_load_disk_cache())
+
 
 def _find_floor_map_path(floor: str) -> Optional[str]:
-    """
-    Supports both:
-      backend/static/floor2.png
-      backend/static/maps/floor2.png  (if you used map_locations.json "maps/floor2.png")
-    """
     floor = str(floor).strip()
     candidates = [
         os.path.join(STATIC_DIR, f"floor{floor}.png"),
@@ -36,7 +72,6 @@ def _find_floor_map_path(floor: str) -> Optional[str]:
 
 def _resolve_floor_for_gallery(gallery: str, map_locations: List[Dict[str, Any]]) -> Optional[str]:
     g = str(gallery).upper().strip()
-
     for floor_obj in map_locations:
         floor = str(floor_obj.get("floor", "")).strip()
         for block in (floor_obj.get("galleries") or []):
@@ -47,122 +82,152 @@ def _resolve_floor_for_gallery(gallery: str, map_locations: List[Dict[str, Any]]
     return None
 
 
-def _preprocess_variants(img_bgr: np.ndarray) -> List[Tuple[np.ndarray, float]]:
-    """
-    Returns list of (processed_gray, scale_factor_relative_to_original)
-    We'll OCR on these and scale coordinates back.
-    """
-    gray0 = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-
-    variants: List[Tuple[np.ndarray, float]] = []
-
-    for scale in (1.5, 2.0, 2.5, 3.0):
-        resized = cv2.resize(gray0, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-
-        # OTSU
-        _, th_otsu = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        # Adaptive
-        th_adapt = cv2.adaptiveThreshold(
-            resized, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 9
-        )
-
-        # Slight morphology to help digits
-        k = np.ones((2, 2), np.uint8)
-        th_otsu = cv2.morphologyEx(th_otsu, cv2.MORPH_OPEN, k, iterations=1)
-        th_adapt = cv2.morphologyEx(th_adapt, cv2.MORPH_OPEN, k, iterations=1)
-
-        variants.append((th_otsu, scale))
-        variants.append((th_adapt, scale))
-
-    return variants
-
-
 def _normalize_ocr_token(t: str) -> str:
     t = (t or "").strip().upper()
     t = "".join(ch for ch in t if ch.isalnum())
     return t
 
 
-def _score_match(token: str, target: str, conf: float) -> float:
+def _build_floor_index(map_path: str) -> Dict[str, Tuple[int, int]]:
     """
-    Combine text similarity + OCR confidence.
-    Similarity dominates.
+    FAST path:
+    - OCR once per floor map
+    - store centers for all gallery numbers we detect
     """
-    sim = 100.0 if token == target else 0.0
-    if sim == 0.0:
-        # allow close matches like "236E" vs "236" etc, but keep strict-ish
-        # rapidfuzz not allowed here without importing; use simple partial logic:
-        if token and target and (token in target or target in token):
-            sim = 85.0
-        else:
-            # rough heuristic
-            sim = 0.0
+    # Already cached?
+    if map_path in _FLOOR_INDEX_CACHE:
+        return _FLOOR_INDEX_CACHE[map_path]
 
-    # weight similarity heavily
-    return sim * 0.75 + max(0.0, min(conf, 100.0)) * 0.25
+    img = cv2.imread(map_path)
+    if img is None:
+        _FLOOR_INDEX_CACHE[map_path] = {}
+        return {}
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # One good, fast preprocessing pass (much faster than many variants)
+    scale = 2.0
+    resized = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    _, th = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Light morphology to help digits
+    k = np.ones((2, 2), np.uint8)
+    th = cv2.morphologyEx(th, cv2.MORPH_OPEN, k, iterations=1)
+
+    config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    data = pytesseract.image_to_data(th, output_type=pytesseract.Output.DICT, config=config)
+
+    texts = data.get("text", [])
+    confs = data.get("conf", [])
+    xs = data.get("left", [])
+    ys = data.get("top", [])
+    ws = data.get("width", [])
+    hs = data.get("height", [])
+
+    best_for_token: Dict[str, Tuple[float, int, int]] = {}  # tok -> (conf, x, y)
+
+    for i in range(len(texts)):
+        tok = _normalize_ocr_token(texts[i])
+        if not tok:
+            continue
+
+        # We mostly care about gallery-ish tokens: 2-3 digits, possibly trailing letter (216, 216A)
+        if not (len(tok) in (2, 3, 4)):
+            continue
+        if not any(ch.isdigit() for ch in tok):
+            continue
+
+        try:
+            conf = float(confs[i])
+        except Exception:
+            conf = 0.0
+
+        # center in processed space
+        cx_p = xs[i] + ws[i] / 2.0
+        cy_p = ys[i] + hs[i] / 2.0
+
+        # scale back to original image coords
+        cx = int(round(cx_p / scale))
+        cy = int(round(cy_p / scale))
+
+        old = best_for_token.get(tok)
+        if (old is None) or (conf > old[0]):
+            best_for_token[tok] = (conf, cx, cy)
+
+    index = {tok: (v[1], v[2]) for tok, v in best_for_token.items() if v[0] >= 40.0}
+
+    _FLOOR_INDEX_CACHE[map_path] = index
+    _save_disk_cache(_FLOOR_INDEX_CACHE)
+    return index
 
 
-def _ocr_find_center(image_path: str, target: str) -> Optional[Tuple[int, int]]:
+def _slow_fallback_find_center(map_path: str, target: str) -> Optional[Tuple[int, int]]:
+    """
+    Slow fallback (your original style):
+    Only used if the cached index doesn't find the token.
+    """
     target = _normalize_ocr_token(str(target))
-
-    img = cv2.imread(image_path)
+    img = cv2.imread(map_path)
     if img is None:
         return None
 
-    best = None  # (score, cx, cy)
+    gray0 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    for proc, scale in _preprocess_variants(img):
-        data = pytesseract.image_to_data(proc, output_type=pytesseract.Output.DICT, config=config)
+    best = None  # (score, cx, cy)
 
-        texts = data.get("text", [])
-        confs = data.get("conf", [])
-        xs = data.get("left", [])
-        ys = data.get("top", [])
-        ws = data.get("width", [])
-        hs = data.get("height", [])
+    for scale in (1.5, 2.0, 2.5, 3.0):
+        resized = cv2.resize(gray0, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
 
-        for i in range(len(texts)):
-            tok = _normalize_ocr_token(texts[i])
-            if not tok:
-                continue
+        _, th_otsu = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        th_adapt = cv2.adaptiveThreshold(
+            resized, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 9
+        )
 
-            try:
-                conf = float(confs[i])
-            except Exception:
-                conf = 0.0
+        k = np.ones((2, 2), np.uint8)
+        th_otsu = cv2.morphologyEx(th_otsu, cv2.MORPH_OPEN, k, iterations=1)
+        th_adapt = cv2.morphologyEx(th_adapt, cv2.MORPH_OPEN, k, iterations=1)
 
-            score = _score_match(tok, target, conf)
-            if score <= 0:
-                continue
+        for proc in (th_otsu, th_adapt):
+            data = pytesseract.image_to_data(proc, output_type=pytesseract.Output.DICT, config=config)
+            texts = data.get("text", [])
+            confs = data.get("conf", [])
+            xs = data.get("left", [])
+            ys = data.get("top", [])
+            ws = data.get("width", [])
+            hs = data.get("height", [])
 
-            # center in processed space
-            cx_p = xs[i] + ws[i] / 2.0
-            cy_p = ys[i] + hs[i] / 2.0
+            for i in range(len(texts)):
+                tok = _normalize_ocr_token(texts[i])
+                if not tok:
+                    continue
 
-            # scale back to original image coords
-            cx = int(round(cx_p / scale))
-            cy = int(round(cy_p / scale))
+                try:
+                    conf = float(confs[i])
+                except Exception:
+                    conf = 0.0
 
-            if best is None or score > best[0]:
-                best = (score, cx, cy)
+                sim = 100.0 if tok == target else (85.0 if (tok in target or target in tok) else 0.0)
+                score = sim * 0.75 + max(0.0, min(conf, 100.0)) * 0.25
+                if score <= 0:
+                    continue
+
+                cx_p = xs[i] + ws[i] / 2.0
+                cy_p = ys[i] + hs[i] / 2.0
+                cx = int(round(cx_p / scale))
+                cy = int(round(cy_p / scale))
+
+                if best is None or score > best[0]:
+                    best = (score, cx, cy)
 
     if best and best[0] >= 70.0:
         return (best[1], best[2])
-
     return None
 
 
 def _draw_marker(draw: ImageDraw.ImageDraw, x: int, y: int, r: int = 18):
-    """
-    A thick high-contrast bullseye marker (more reliable than a thin star).
-    """
-    # outer ring
     draw.ellipse((x - r, y - r, x + r, y + r), outline=(255, 0, 0, 255), width=6)
-    # inner fill
     draw.ellipse((x - r // 2, y - r // 2, x + r // 2, y + r // 2), fill=(255, 0, 0, 200))
-    # crosshair
     draw.line((x - r, y, x + r, y), fill=(255, 255, 255, 255), width=3)
     draw.line((x, y - r, x, y + r), fill=(255, 255, 255, 255), width=3)
 
@@ -170,36 +235,53 @@ def _draw_marker(draw: ImageDraw.ImageDraw, x: int, y: int, r: int = 18):
 def get_gallery_map_image(gallery: str, map_locations: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Returns {"image_url": "/backend/static/generated/<file>.png"}
-    Always generates an output image. If OCR fails, it returns an unmarked map.
+    Now fast:
+      - deterministic output name per floor+gallery (reused)
+      - OCR index cached per floor
+      - slow fallback only if needed
     """
     g = str(gallery).upper().strip()
 
-    floor = _resolve_floor_for_gallery(g, map_locations)
-    if not floor:
-        # If we can't resolve floor, just try floor2 as fallback (most galleries live there)
-        floor = "2"
-
-    map_path = _find_floor_map_path(floor)
+    floor = _resolve_floor_for_gallery(g, map_locations) or "2"
+    map_path = _find_floor_map_path(floor) or _find_floor_map_path("2")
     if not map_path:
-        # ultimate fallback: try floor2
-        map_path = _find_floor_map_path("2")
-        if not map_path:
-            return {"image_url": None}
+        return {"image_url": None}
 
-    # Generate output file
-    out_name = f"gallery_{g}_{uuid.uuid4().hex[:10]}.png"
+    # Deterministic output filename (reuse instead of re-generating endlessly)
+    safe_g = "".join(ch for ch in g if ch.isalnum())
+    out_name = f"gallery_{safe_g}_floor{floor}.png"
     out_path = os.path.join(GEN_DIR, out_name)
 
-    # Try OCR center
-    center = _ocr_find_center(map_path, g)
+    # If we've already generated it, return instantly
+    if os.path.exists(out_path):
+        return {"image_url": f"/backend/static/generated/{out_name}"}
+
+    # Find center quickly via cached index
+    index = _build_floor_index(map_path)
+    center = index.get(g)
+
+    # Try normalized variants (216 vs 216A etc)
+    if not center:
+        g_norm = _normalize_ocr_token(g)
+        center = index.get(g_norm)
+
+    # Slow fallback once if not found
+    if not center:
+        center = _slow_fallback_find_center(map_path, g)
+        if center:
+            # update cache so next time it's instant
+            index[_normalize_ocr_token(g)] = center
+            _FLOOR_INDEX_CACHE[map_path] = index
+            _save_disk_cache(_FLOOR_INDEX_CACHE)
 
     base = Image.open(map_path).convert("RGBA")
-    draw = ImageDraw.Draw(base)
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
 
     if center:
-        _draw_marker(draw, int(center[0]), int(center[1]), r=18)
+        _draw_marker(draw, center[0], center[1], r=18)
 
-    base.save(out_path, "PNG")
+    out = Image.alpha_composite(base, overlay)
+    out.save(out_path)
 
-    rel = os.path.relpath(out_path, STATIC_DIR).replace("\\", "/")
-    return {"image_url": f"/backend/static/{rel}"}
+    return {"image_url": f"/backend/static/generated/{out_name}"}

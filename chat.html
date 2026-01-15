@@ -30,7 +30,7 @@ const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
 
-const STORAGE_KEY = "slam_chat_history_v2";
+const STORAGE_KEY = "slam_chat_history_v3";
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function formatTimestamp(date = new Date()) {
@@ -111,7 +111,30 @@ function appendMessage(sender, text, opts = {}) {
     chatArea.appendChild(msgWrap);
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return { bubble };
+    return { bubble, msgWrap };
+}
+
+function renderSuggestions(containerEl, suggestions) {
+    if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "suggestions-wrap";
+
+    for (const s of suggestions) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "suggestion-btn";
+        btn.textContent = s;
+
+        btn.addEventListener("click", () => {
+            showUserThenBot(s);
+        });
+
+        wrap.appendChild(btn);
+    }
+
+    containerEl.appendChild(wrap);
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
 
 function typeBotReply(text, typingSpeed = 30, after = null) {
@@ -167,13 +190,14 @@ async function showUserThenBot(userText) {
     try {
         payload = await callPythonBackend(userText);
     } catch (e) {
-        payload = { text: "Backend is not responding. Make sure Flask is running.", image_url: null };
+        payload = { text: "Backend is not responding. Make sure Flask is running.", image_url: null, suggestions: [] };
     }
 
     const replyText = payload?.text || "I'm not sure I understand — could you try asking in a different way?";
     const imgUrl = payload?.image_url || null;
+    const suggestions = payload?.suggestions || [];
 
-    typeBotReply(replyText, 30, (bubble) => {
+    typeBotReply(replyText, 25, (bubble) => {
         if (imgUrl) {
             const img = document.createElement("img");
             img.className = "map-image";
@@ -181,6 +205,9 @@ async function showUserThenBot(userText) {
             img.alt = "Map";
             bubble.appendChild(img);
         }
+
+        // ✅ SHOW SUGGESTIONS
+        renderSuggestions(bubble, suggestions);
     });
 
     historyState.messages.push({ sender: "bot", text: replyText, image_url: imgUrl, ts: Date.now() });
@@ -213,7 +240,6 @@ inputEl.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('load', () => {
-    // Strip any old ?message=... instantly
     if (window.location.search && window.location.search.includes("message=")) {
         history.replaceState({}, "", "chat.html");
     }
