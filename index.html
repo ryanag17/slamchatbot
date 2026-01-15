@@ -25,19 +25,19 @@
 
     <script>
         function goToChatWithMessage(msg) {
-            const clean = (msg || "").trim();
-            if (!clean) return;
-            sessionStorage.setItem("slam_initial_message", clean);
-            window.location.href = "chat.html";
+            sessionStorage.setItem("slam_initial_message", msg);
+            window.location.href = "chat.html"; // NO query params
         }
 
         document.getElementById("send-btn").addEventListener("click", function() {
-            goToChatWithMessage(document.getElementById("user-input").value);
+            let userInput = document.getElementById("user-input").value.trim();
+            if (userInput) goToChatWithMessage(userInput);
         });
 
         document.getElementById("user-input").addEventListener("keydown", function(event) {
             if (event.key === "Enter") {
-                goToChatWithMessage(document.getElementById("user-input").value);
+                let userInput = document.getElementById("user-input").value.trim();
+                if (userInput) goToChatWithMessage(userInput);
             }
         });
     </script>

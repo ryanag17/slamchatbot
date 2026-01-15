@@ -25,9 +25,6 @@
 
 </div>
 
-<!-- Tesseract.js for browser OCR -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
 <script>
 const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
@@ -52,13 +49,17 @@ function loadHistory() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return { createdAt: Date.now(), messages: [] };
+
         const parsed = JSON.parse(raw);
-        if (!parsed.createdAt || !Array.isArray(parsed.messages)) return { createdAt: Date.now(), messages: [] };
+        if (!parsed.createdAt || !Array.isArray(parsed.messages)) {
+            return { createdAt: Date.now(), messages: [] };
+        }
 
         if (Date.now() - parsed.createdAt > STORAGE_TTL_MS) {
             localStorage.removeItem(STORAGE_KEY);
             return { createdAt: Date.now(), messages: [] };
         }
+
         return parsed;
     } catch {
         return { createdAt: Date.now(), messages: [] };
@@ -72,7 +73,7 @@ function saveHistory(history) {
 let historyState = loadHistory();
 
 function appendMessage(sender, text, opts = {}) {
-    const { isTypingPlaceholder = false, timestampOverride = null } = opts;
+    const { isTypingPlaceholder = false, imageUrl = null, timestampOverride = null } = opts;
 
     const msgWrap = document.createElement('div');
     msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
@@ -92,6 +93,14 @@ function appendMessage(sender, text, opts = {}) {
             bubble.appendChild(textDiv);
         }
 
+        if (imageUrl) {
+            const img = document.createElement('img');
+            img.className = 'map-image';
+            img.src = imageUrl;
+            img.alt = 'Map';
+            bubble.appendChild(img);
+        }
+
         const timestamp = document.createElement('div');
         timestamp.className = 'timestamp';
         timestamp.textContent = timestampOverride || formatTimestamp();
@@ -102,10 +111,10 @@ function appendMessage(sender, text, opts = {}) {
     chatArea.appendChild(msgWrap);
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return { msgWrap, bubble };
+    return { bubble };
 }
 
-function typeBotReply(text, typingSpeed = 35, after = null) {
+function typeBotReply(text, typingSpeed = 30, after = null) {
     const { bubble } = appendMessage('bot', '', { isTypingPlaceholder: true });
 
     bubble.innerHTML = '';
@@ -133,127 +142,20 @@ function typeBotReply(text, typingSpeed = 35, after = null) {
     step();
 }
 
-// -------------------- Python backend call --------------------
 async function callPythonBackend(userText) {
     const res = await fetch("/api/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: userText })
     });
-    if (!res.ok) throw new Error("Backend error");
+
+    if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error("Backend error: " + res.status + " " + t);
+    }
     return await res.json();
 }
 
-// -------------------- Map OCR + Star drawing --------------------
-function drawStar(ctx, x, y, rOuter, rInner, points=5) {
-    const step = Math.PI / points;
-    ctx.save();
-    ctx.beginPath();
-    ctx.translate(x, y);
-    ctx.moveTo(0, -rOuter);
-    for (let i = 0; i < points; i++) {
-        ctx.rotate(step);
-        ctx.lineTo(0, -rInner);
-        ctx.rotate(step);
-        ctx.lineTo(0, -rOuter);
-    }
-    ctx.closePath();
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = "rgba(0,0,0,0.85)";
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255,215,0,0.95)";
-    ctx.fill();
-    ctx.restore();
-}
-
-async function renderMapWithStar(containerBubble, mapImageUrl, targetText) {
-    const wrap = document.createElement("div");
-    wrap.className = "map-wrap";
-
-    const canvas = document.createElement("canvas");
-    canvas.className = "map-canvas";
-    wrap.appendChild(canvas);
-    containerBubble.appendChild(wrap);
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = mapImageUrl;
-
-    await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-    });
-
-    // Make canvas match image resolution for accurate OCR coordinate mapping
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-
-    // If no target provided, stop after showing map
-    if (!targetText) return;
-
-    // OCR the image to find bounding box for target (e.g., "219", "236E")
-    let result;
-    try {
-        result = await Tesseract.recognize(img, "eng", {
-            logger: () => {}
-        });
-    } catch (e) {
-        // Still show map even if OCR fails
-        const note = document.createElement("div");
-        note.style.marginTop = "8px";
-        note.style.fontSize = "13px";
-        note.textContent = "I couldn’t automatically locate that number on the map, but here’s the correct floor map.";
-        containerBubble.appendChild(note);
-        return;
-    }
-
-    const target = String(targetText).toUpperCase();
-    const words = (result?.data?.words || []);
-    let best = null;
-
-    for (const w of words) {
-        const txt = String(w.text || "").replace(/\s+/g, "").toUpperCase();
-        if (!txt) continue;
-
-        // exact match preferred
-        if (txt === target) {
-            best = w;
-            break;
-        }
-
-        // sometimes OCR drops letters or splits: allow contains match
-        if (txt.includes(target) || target.includes(txt)) {
-            // pick the tighter bounding box if multiple
-            if (!best) best = w;
-            else {
-                const a = (best.bbox.x1 - best.bbox.x0) * (best.bbox.y1 - best.bbox.y0);
-                const b = (w.bbox.x1 - w.bbox.x0) * (w.bbox.y1 - w.bbox.y0);
-                if (b < a) best = w;
-            }
-        }
-    }
-
-    if (!best || !best.bbox) {
-        const note = document.createElement("div");
-        note.style.marginTop = "8px";
-        note.style.fontSize = "13px";
-        note.textContent = `I found the right floor map, but couldn’t spot “${target}” automatically. The number may be too small for OCR.`;
-        containerBubble.appendChild(note);
-        return;
-    }
-
-    const { x0, y0, x1, y1 } = best.bbox;
-    const cx = (x0 + x1) / 2;
-    const cy = (y0 + y1) / 2;
-
-    // draw star slightly above center so it doesn't cover text fully
-    drawStar(ctx, cx, cy - 12, 34, 14, 5);
-}
-
-// -------------------- Main chat flow --------------------
 async function showUserThenBot(userText) {
     const userTs = formatTimestamp();
     appendMessage('user', userText, { timestampOverride: userTs });
@@ -265,38 +167,34 @@ async function showUserThenBot(userText) {
     try {
         payload = await callPythonBackend(userText);
     } catch (e) {
-        payload = { text: "Backend is not responding. Make sure Flask is running.", map: null };
+        payload = { text: "Backend is not responding. Make sure Flask is running.", image_url: null };
     }
 
     const replyText = payload?.text || "I'm not sure I understand — could you try asking in a different way?";
-    const mapObj = payload?.map || null;
+    const imgUrl = payload?.image_url || null;
 
-    typeBotReply(replyText, 35, async (bubble) => {
-        if (mapObj && mapObj.image) {
-            try {
-                await renderMapWithStar(bubble, mapObj.image, mapObj.target);
-            } catch {
-                // ignore map rendering errors, keep reply text
-            }
+    typeBotReply(replyText, 30, (bubble) => {
+        if (imgUrl) {
+            const img = document.createElement("img");
+            img.className = "map-image";
+            img.src = imgUrl;
+            img.alt = "Map";
+            bubble.appendChild(img);
         }
     });
 
-    historyState.messages.push({ sender: "bot", text: replyText, map: mapObj, ts: Date.now() });
+    historyState.messages.push({ sender: "bot", text: replyText, image_url: imgUrl, ts: Date.now() });
     saveHistory(historyState);
 }
 
-// -------------------- restore chat on refresh --------------------
 function renderHistory() {
     chatArea.innerHTML = "";
     for (const m of historyState.messages) {
         const ts = formatTimestamp(new Date(m.ts || Date.now()));
-        const { bubble } = appendMessage(m.sender === "user" ? "user" : "bot", m.text || "", { timestampOverride: ts });
-
-        // re-render maps for bot messages if present
-        if (m.sender === "bot" && m.map && m.map.image) {
-            // best-effort: redraw map with star
-            renderMapWithStar(bubble, m.map.image, m.map.target).catch(()=>{});
-        }
+        appendMessage(m.sender === "user" ? "user" : "bot", m.text || "", {
+            imageUrl: m.image_url || null,
+            timestampOverride: ts
+        });
     }
     chatArea.scrollTop = chatArea.scrollHeight;
 }
@@ -314,8 +212,12 @@ inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendFromInput();
 });
 
-// -------------------- initial message handling --------------------
 window.addEventListener('load', () => {
+    // Strip any old ?message=... instantly
+    if (window.location.search && window.location.search.includes("message=")) {
+        history.replaceState({}, "", "chat.html");
+    }
+
     renderHistory();
 
     const initial = sessionStorage.getItem("slam_initial_message");
