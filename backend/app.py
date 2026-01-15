@@ -19,17 +19,18 @@ def api_respond():
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
-        return jsonify({"text": "Please type a message.", "image_url": None})
+        return jsonify({"text": "Please type a message.", "image_url": None, "suggestions": []})
 
     out = respond(text)
 
-    # out must be dict: {text: "...", image_url: "... or None"}
+    # Backwards compatible: if respond() returns a plain string
     if isinstance(out, str):
-        return jsonify({"text": out, "image_url": None})
+        return jsonify({"text": out, "image_url": None, "suggestions": []})
 
     return jsonify({
         "text": out.get("text", ""),
-        "image_url": out.get("image_url")
+        "image_url": out.get("image_url"),
+        "suggestions": out.get("suggestions", [])
     })
 
 # Serve backend/static (including generated images)
@@ -38,7 +39,7 @@ def serve_backend_static(filename):
     static_dir = os.path.join(BACKEND_DIR, "static")
     return send_from_directory(static_dir, filename)
 
-if __name__ == "__main__":
+if __name__ == "_main_":
     # IMPORTANT:
     # - 0.0.0.0 lets the VM accept external traffic
     # - Keep port 8080; just open it in GCP firewall

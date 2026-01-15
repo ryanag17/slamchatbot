@@ -1,3 +1,4 @@
+<!-- frontend/chat.html  (FULL FILE) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,35 +15,28 @@
         <h1>SLAM Chatbot</h1>
     </header>
 
-    <div id="messages-container">
-        <div id="chat-area" aria-live="polite" role="log"></div>
-    </div>
+    <main id="chat-area"></main>
 
-    <div id="message-input-container">
-        <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
-        <button id="send-message-btn">Send</button>
-    </div>
+    <div id="suggestions" class="suggestions"></div>
 
+    <footer>
+        <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off"/>
+        <button id="send-btn">Send</button>
+    </footer>
 </div>
 
 <script>
-const chatArea = document.getElementById('chat-area');
-const sendBtn = document.getElementById('send-message-btn');
-const inputEl = document.getElementById('user-message-input');
+const chatArea = document.getElementById("chat-area");
+const input = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+const suggestionsEl = document.getElementById("suggestions");
 
-const STORAGE_KEY = "slam_chat_history_v2";
-const STORAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const STORAGE_KEY = "slam_chat_history_v1";
+const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-function formatTimestamp(date = new Date()) {
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    return `${mm}/${dd}/${yyyy}, ${hours}:${minutes} ${ampm}`;
+function formatTimestamp(d = new Date()) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function loadHistory() {
@@ -66,77 +60,47 @@ function loadHistory() {
     }
 }
 
-function saveHistory(history) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); } catch {}
+function saveHistory(state) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {}
 }
 
 let historyState = loadHistory();
 
 function appendMessage(sender, text, opts = {}) {
-    const { isTypingPlaceholder = false, imageUrl = null, timestampOverride = null } = opts;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble " + sender;
 
-    const msgWrap = document.createElement('div');
-    msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+    const msg = document.createElement("div");
+    msg.className = "msg";
+    msg.textContent = text || "";
+    bubble.appendChild(msg);
 
-    const bubble = document.createElement('div');
-    bubble.className = 'message-bubble ' + (sender === 'user' ? 'user-bubble' : 'bot-bubble');
+    const ts = document.createElement("div");
+    ts.className = "timestamp";
+    ts.textContent = opts.timestampOverride || formatTimestamp();
+    bubble.appendChild(ts);
 
-    if (isTypingPlaceholder) {
-        const dots = document.createElement('span');
-        dots.className = 'typing-dots';
-        dots.textContent = '· · ·';
-        bubble.appendChild(dots);
-    } else {
-        if (text) {
-            const textDiv = document.createElement('div');
-            textDiv.textContent = text;
-            bubble.appendChild(textDiv);
-        }
-
-        if (imageUrl) {
-            const img = document.createElement('img');
-            img.className = 'map-image';
-            img.src = imageUrl;
-            img.alt = 'Map';
-            bubble.appendChild(img);
-        }
-
-        const timestamp = document.createElement('div');
-        timestamp.className = 'timestamp';
-        timestamp.textContent = timestampOverride || formatTimestamp();
-        bubble.appendChild(timestamp);
-    }
-
-    msgWrap.appendChild(bubble);
-    chatArea.appendChild(msgWrap);
+    chatArea.appendChild(bubble);
     chatArea.scrollTop = chatArea.scrollHeight;
 
-    return { bubble };
+    return bubble;
 }
 
-function typeBotReply(text, typingSpeed = 30, after = null) {
-    const { bubble } = appendMessage('bot', '', { isTypingPlaceholder: true });
-
-    bubble.innerHTML = '';
-    const typedDiv = document.createElement('div');
-    typedDiv.className = 'typed-text';
-    bubble.appendChild(typedDiv);
-
+function typeBotReply(text, speedMs, afterDone) {
+    const bubble = appendMessage("bot", "");
+    const msg = bubble.querySelector(".msg");
     let i = 0;
+
     function step() {
-        if (i < text.length) {
-            typedDiv.textContent += text.charAt(i);
+        if (i <= text.length) {
+            msg.textContent = text.slice(0, i);
             i++;
             chatArea.scrollTop = chatArea.scrollHeight;
-            setTimeout(step, typingSpeed);
+            setTimeout(step, speedMs);
         } else {
-            if (typeof after === "function") after(bubble);
-
-            const timestamp = document.createElement('div');
-            timestamp.className = 'timestamp';
-            timestamp.textContent = formatTimestamp();
-            bubble.appendChild(timestamp);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            if (afterDone) afterDone(bubble);
         }
     }
     step();
@@ -156,9 +120,26 @@ async function callPythonBackend(userText) {
     return await res.json();
 }
 
+function renderSuggestions(list) {
+    suggestionsEl.innerHTML = "";
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    for (const s of list) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "suggestion-chip";
+        btn.textContent = s;
+        btn.addEventListener("click", () => {
+            input.value = s;
+            input.focus();
+        });
+        suggestionsEl.appendChild(btn);
+    }
+}
+
 async function showUserThenBot(userText) {
     const userTs = formatTimestamp();
-    appendMessage('user', userText, { timestampOverride: userTs });
+    appendMessage("user", userText, { timestampOverride: userTs });
 
     historyState.messages.push({ sender: "user", text: userText, ts: Date.now() });
     saveHistory(historyState);
@@ -167,13 +148,14 @@ async function showUserThenBot(userText) {
     try {
         payload = await callPythonBackend(userText);
     } catch (e) {
-        payload = { text: "Backend is not responding. Make sure Flask is running.", image_url: null };
+        payload = { text: "Backend is not responding. Make sure Flask is running.", image_url: null, suggestions: [] };
     }
 
     const replyText = payload?.text || "I'm not sure I understand — could you try asking in a different way?";
     const imgUrl = payload?.image_url || null;
+    const sugg = payload?.suggestions || [];
 
-    typeBotReply(replyText, 30, (bubble) => {
+    typeBotReply(replyText, 25, (bubble) => {
         if (imgUrl) {
             const img = document.createElement("img");
             img.className = "map-image";
@@ -181,9 +163,10 @@ async function showUserThenBot(userText) {
             img.alt = "Map";
             bubble.appendChild(img);
         }
+        renderSuggestions(sugg);
     });
 
-    historyState.messages.push({ sender: "bot", text: replyText, image_url: imgUrl, ts: Date.now() });
+    historyState.messages.push({ sender: "bot", text: replyText, image_url: imgUrl, suggestions: sugg, ts: Date.now() });
     saveHistory(historyState);
 }
 
@@ -191,42 +174,38 @@ function renderHistory() {
     chatArea.innerHTML = "";
     for (const m of historyState.messages) {
         const ts = formatTimestamp(new Date(m.ts || Date.now()));
-        appendMessage(m.sender === "user" ? "user" : "bot", m.text || "", {
-            imageUrl: m.image_url || null,
-            timestampOverride: ts
-        });
+        const bubble = appendMessage(m.sender, m.text, { timestampOverride: ts });
+        if (m.sender === "bot" && m.image_url) {
+            const img = document.createElement("img");
+            img.className = "map-image";
+            img.src = m.image_url;
+            img.alt = "Map";
+            bubble.appendChild(img);
+        }
     }
-    chatArea.scrollTop = chatArea.scrollHeight;
+    // show most recent suggestions if present
+    for (let i = historyState.messages.length - 1; i >= 0; i--) {
+        const m = historyState.messages[i];
+        if (m.sender === "bot" && Array.isArray(m.suggestions) && m.suggestions.length) {
+            renderSuggestions(m.suggestions);
+            break;
+        }
+    }
 }
 
-function sendFromInput() {
-    const text = inputEl.value.trim();
+function sendMessage() {
+    const text = (input.value || "").trim();
     if (!text) return;
-    inputEl.value = '';
+    input.value = "";
     showUserThenBot(text);
-    inputEl.focus();
 }
 
-sendBtn.addEventListener('click', sendFromInput);
-inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendFromInput();
+sendBtn.addEventListener("click", sendMessage);
+input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
 });
 
-window.addEventListener('load', () => {
-    // Strip any old ?message=... instantly
-    if (window.location.search && window.location.search.includes("message=")) {
-        history.replaceState({}, "", "chat.html");
-    }
-
-    renderHistory();
-
-    const initial = sessionStorage.getItem("slam_initial_message");
-    if (initial) {
-        sessionStorage.removeItem("slam_initial_message");
-        showUserThenBot(initial);
-    }
-});
+renderHistory();
 </script>
-
 </body>
 </html>
