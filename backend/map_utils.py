@@ -27,7 +27,7 @@ def _safe_base_dir() -> str:
     where _file_ is not defined (VS Code interactive, etc.)
     """
     try:
-        return os.path.dirname(os.path.abspath(_file_))
+        return os.path.dirname(os.path.abspath(__file__))
     except NameError:
         return os.getcwd()
 
