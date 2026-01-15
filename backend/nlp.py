@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from langdetect import detect
+from langdetect import detect, detect_langs
 from deep_translator import GoogleTranslator
 from rapidfuzz import fuzz, process
 
@@ -278,14 +278,29 @@ def _translate_in(text: str) -> Tuple[str, Optional[str]]:
     if not raw:
         return raw, None
 
+    # ---- short-message safety (prevents "Hello!" => Italian) ----
+    norm = _normalize(raw)
+    # Common greetings / tiny inputs should be treated as English
+    if norm in {"hi", "hello", "hey", "yo", "hiya", "greetings", "ok", "okay"} or len(norm) <= 5:
+        return raw, None
+
+    # Use detect_langs so we can see probability
     try:
-        lang = detect(raw)
+        langs = detect_langs(raw)  # e.g. [en:0.99]
+        top = langs[0]
+        lang = top.lang
+        prob = top.prob
     except Exception:
+        return raw, None
+
+    # If it's not confidently non-English, do NOT translate
+    if lang != "en" and prob < 0.90:
         return raw, None
 
     if lang == "en":
         return raw, None
 
+    # translate to English
     try:
         en = GoogleTranslator(source="auto", target="en").translate(raw)
         return en, lang

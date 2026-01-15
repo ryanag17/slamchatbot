@@ -1,133 +1,156 @@
 import os
 import re
-import uuid
+import time
+from typing import Optional, Tuple, Dict, Any
 
 from PIL import Image, ImageDraw
-import cv2
 import numpy as np
 
-import pytesseract
+# OpenCV + Tesseract are optional at runtime (we handle failures gracefully)
+try:
+    import cv2  # opencv-python-headless
+except Exception:
+    cv2 = None
 
-BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
-STATIC_DIR = os.path.join(BACKEND_DIR, "static")
-GEN_DIR = os.path.join(STATIC_DIR, "generated")
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
 
-os.makedirs(GEN_DIR, exist_ok=True)
 
-def _map_image_path_from_json(map_image_value: str) -> str | None:
+# ------------------------------------------------------------
+# Path helpers (robust even if _file_ is undefined)
+# ------------------------------------------------------------
+def _safe_base_dir() -> str:
     """
-    Your JSON uses: "maps/floor2.png"
-    But your real file is at project root: "floor2.png"
-    So we strip and map it.
+    Returns the directory this file is in, even if run in environments
+    where _file_ is not defined (VS Code interactive, etc.)
     """
-    if not map_image_value:
-        return None
-    # take basename "floor2.png"
-    base = os.path.basename(map_image_value)
-    # if json says floor2.png -> root/floor2.png
-    candidate = os.path.join(PROJECT_ROOT, base)
-    return candidate if os.path.exists(candidate) else None
+    try:
+        return os.path.dirname(os.path.abspath(_file_))
+    except NameError:
+        return os.getcwd()
 
-def _find_floor_map_for_gallery(gallery: str, map_locations: list) -> str | None:
-    g = str(gallery).upper()
-    for floor in map_locations:
-        for sec in floor.get("galleries", []) or []:
-            nums = [str(x).upper() for x in (sec.get("numbers") or [])]
-            if g in nums:
-                return _map_image_path_from_json(sec.get("map_image"))
-        # also allow stairs/elevators etc if they are numeric like "219"
-        for key in ["stairs", "elevators", "coat_checks"]:
-            nums = [str(x).upper() for x in (floor.get(key) or [])]
-            if g in nums:
-                # use any floor map image we can find from galleries list
-                # fallback: if floor has any gallery, use its map_image
-                galleries = floor.get("galleries") or []
-                if galleries:
-                    return _map_image_path_from_json(galleries[0].get("map_image"))
+
+def get_project_root() -> str:
+    """
+    Your structure:
+      project_root/
+        index.html, chat.html, styles.css, floor1.png, floor2.png, floor3.png
+        backend/
+          app.py
+          map_utils.py  <- this file
+          static/
+            generated/
+          data/
+            ...
+    """
+    base = _safe_base_dir()
+
+    # If we're inside ".../backend", root is parent
+    if os.path.basename(base).lower() == "backend":
+        return os.path.dirname(base)
+
+    # If we are somehow deeper, try to climb until we find backend folder
+    cur = base
+    for _ in range(5):
+        if os.path.isdir(os.path.join(cur, "backend")):
+            return cur
+        cur = os.path.dirname(cur)
+
+    # fallback
+    return base
+
+
+def get_backend_dir() -> str:
+    root = get_project_root()
+    return os.path.join(root, "backend")
+
+
+def get_generated_dir() -> str:
+    backend = get_backend_dir()
+    gen = os.path.join(backend, "static", "generated")
+    os.makedirs(gen, exist_ok=True)
+    return gen
+
+
+def find_map_image_on_disk(map_basename: str) -> Optional[str]:
+    """
+    Your floor images are in the project root (e.g., /floor2.png).
+    Sometimes JSON may reference "maps/floor2.png" -> basename still floor2.png.
+    """
+    root = get_project_root()
+
+    # Look in root first (your real location)
+    p1 = os.path.join(root, map_basename)
+    if os.path.isfile(p1):
+        return p1
+
+    # Also allow root/maps if you ever move them
+    p2 = os.path.join(root, "maps", map_basename)
+    if os.path.isfile(p2):
+        return p2
+
+    # Also allow backend/static/maps
+    p3 = os.path.join(get_backend_dir(), "static", "maps", map_basename)
+    if os.path.isfile(p3):
+        return p3
+
     return None
 
-def _draw_star(draw: ImageDraw.ImageDraw, x: int, y: int, r: int = 18):
-    # Simple star-ish marker (circle + cross). Looks good enough.
-    draw.ellipse((x-r, y-r, x+r, y+r), outline=(255, 0, 0), width=6)
-    draw.line((x-r, y, x+r, y), fill=(255, 0, 0), width=6)
-    draw.line((x, y-r, x, y+r), fill=(255, 0, 0), width=6)
 
-def _ocr_find_text_box(image_path: str, target: str):
+# ------------------------------------------------------------
+# Drawing utilities
+# ------------------------------------------------------------
+def _draw_star(draw: ImageDraw.ImageDraw, center: Tuple[int, int], radius: int = 18):
     """
-    Uses pytesseract to find bounding boxes for text.
-    Returns (cx, cy) center of best match or None.
+    Draw a solid 5-point star.
     """
-    target = str(target).upper()
+    cx, cy = center
+    points = []
+    # 5-point star coordinates
+    for i in range(10):
+        angle = i * 36  # degrees
+        r = radius if i % 2 == 0 else radius // 2
+        rad = np.deg2rad(angle - 90)
+        x = cx + int(r * np.cos(rad))
+        y = cy + int(r * np.sin(rad))
+        points.append((x, y))
 
-    img = cv2.imread(image_path)
-    if img is None:
+    # fill star + outline
+    draw.polygon(points, fill=(255, 215, 0), outline=(0, 0, 0))  # gold w/ black outline
+
+
+def _draw_marker(img: Image.Image, center: Tuple[int, int]) -> Image.Image:
+    """
+    Adds a star marker + halo circle to make it obvious.
+    """
+    out = img.copy()
+    draw = ImageDraw.Draw(out)
+
+    cx, cy = center
+
+    # halo circle
+    halo_r = 28
+    draw.ellipse((cx - halo_r, cy - halo_r, cx + halo_r, cy + halo_r),
+                 outline=(255, 0, 0), width=5)
+
+    # star
+    _draw_star(draw, (cx, cy), radius=18)
+    return out
+
+
+# ------------------------------------------------------------
+# OCR search
+# ------------------------------------------------------------
+def _normalize_gallery_token(token: str) -> str:
+    return (token or "").strip().upper()
+
+
+def _ocr_find_token_center(image_path: str, token: str) -> Optional[Tuple[int, int]]:
+    """
+    Uses pytesseract to locate token on image.
+    Returns center (x,y) if found.
+    """
+    if pytesseract is None or cv2 is None:
         return None
-
-    # preprocess for OCR
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-
-    # OCR with boxes
-    data = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-
-    best = None
-    best_score = 0
-
-    for i, txt in enumerate(data.get("text", [])):
-        t = (txt or "").strip().upper()
-        if not t:
-            continue
-
-        # exact match or close match
-        score = 100 if t == target else 0
-        if score == 0:
-            # allow "236E" etc
-            if re.sub(r"\W+", "", t) == re.sub(r"\W+", "", target):
-                score = 90
-            elif target in t:
-                score = 70
-
-        if score > best_score:
-            x = data["left"][i]
-            y = data["top"][i]
-            w = data["width"][i]
-            h = data["height"][i]
-            best = (x + w//2, y + h//2)
-            best_score = score
-
-    return best
-
-def get_gallery_map_image(gallery: str, map_locations: list) -> dict | None:
-    """
-    Returns:
-      { "image_url": "/backend/static/generated/<file>.png" }
-    """
-    gallery = str(gallery).upper()
-    map_path = _find_floor_map_for_gallery(gallery, map_locations)
-    if not map_path:
-        return None
-
-    # Try OCR locate number on map and draw star
-    marked_path = os.path.join(GEN_DIR, f"gallery_{gallery}_{uuid.uuid4().hex[:8]}.png")
-
-    try:
-        center = _ocr_find_text_box(map_path, gallery)
-
-        base = Image.open(map_path).convert("RGBA")
-        draw = ImageDraw.Draw(base)
-
-        if center:
-            _draw_star(draw, int(center[0]), int(center[1]), r=18)
-
-        base.save(marked_path, "PNG")
-
-        # URL for frontend (served by app.py)
-        rel = os.path.relpath(marked_path, STATIC_DIR).replace("\\", "/")
-        return {"image_url": f"/backend/static/{rel}"}
-
-    except Exception:
-        # Fallback: return unmarked map (still useful)
-        # Just serve original root image via nginx static
-        # map_path is root/floor2.png etc, so URL is "/floor2.png"
-        return {"image_url": "/" + os.path.basename(map_path)}
