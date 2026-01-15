@@ -13,121 +13,159 @@
       <h1>SLAM Chatbot</h1>
     </header>
 
-    <main id="chat-area"></main>
+    <div id="messages-container">
+      <div id="chat-area"></div>
 
-    <div id="suggestions" class="suggestions"></div>
+      <!-- Suggestions go under chat -->
+      <div id="suggestions" style="padding: 10px 4px; display:flex; gap:10px; flex-wrap:wrap;"></div>
+    </div>
 
-    <footer>
-      <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off" />
-      <button id="send-btn">Send</button>
-    </footer>
+    <div id="message-input-container">
+      <input id="user-message-input" type="text" placeholder="Type your message..." autocomplete="off"/>
+      <button id="send-message-btn">Send</button>
+    </div>
   </div>
 
 <script>
-const chatArea = document.getElementById("chat-area");
-const input = document.getElementById("user-input");
-const sendBtn = document.getElementById("send-btn");
-const suggestionsEl = document.getElementById("suggestions");
+  const chatArea = document.getElementById("chat-area");
+  const input = document.getElementById("user-message-input");
+  const sendBtn = document.getElementById("send-message-btn");
+  const suggestionsEl = document.getElementById("suggestions");
 
-// If page is served on :8080, same-origin is fine.
-// If page is served on :80 (or anything else), send API to :8080.
-const API_BASE =
-  (window.location.port === "8080")
-    ? ""
-    : `${window.location.protocol}//${window.location.hostname}:8080`;
+  // If the page is served on :8080, same-origin is fine.
+  // If served on :80, call backend on :8080 (GCP common setup).
+  const API_BASE =
+    (window.location.port === "8080")
+      ? ""
+      : `${window.location.protocol}//${window.location.hostname}:8080`;
 
-function appendBubble(sender, text) {
-  const div = document.createElement("div");
-  div.className = "bubble " + sender;
-  div.textContent = text;
-  chatArea.appendChild(div);
-  chatArea.scrollTop = chatArea.scrollHeight;
-  return div;
-}
+  function formatTimestamp(d = new Date()) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
-function renderSuggestions(list) {
-  suggestionsEl.innerHTML = "";
-  if (!Array.isArray(list) || list.length === 0) return;
+  function renderSuggestions(list) {
+    suggestionsEl.innerHTML = "";
+    if (!Array.isArray(list) || list.length === 0) return;
 
-  list.forEach((s) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "suggestion-chip";
-    btn.textContent = s;
-    btn.onclick = () => {
-      input.value = s;
-      input.focus();
-    };
-    suggestionsEl.appendChild(btn);
+    list.forEach((s) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      // Use your existing button styling
+      btn.id = "send-btn";
+      btn.style.padding = "10px 14px";
+      btn.style.borderRadius = "18px";
+      btn.textContent = s;
+      btn.addEventListener("click", () => {
+        input.value = s;
+        input.focus();
+      });
+      suggestionsEl.appendChild(btn);
+    });
+  }
+
+  function addMessageBubble(sender, text) {
+    const wrapper = document.createElement("div");
+    wrapper.className = `chat-message ${sender === "user" ? "user-message" : "bot-message"}`;
+
+    const bubble = document.createElement("div");
+    bubble.className = `message-bubble ${sender === "user" ? "user-bubble" : "bot-bubble"}`;
+
+    const typed = document.createElement("span");
+    typed.className = "typed-text";
+    typed.textContent = text || "";
+    bubble.appendChild(typed);
+
+    const ts = document.createElement("div");
+    ts.className = "timestamp";
+    ts.textContent = formatTimestamp();
+    bubble.appendChild(ts);
+
+    wrapper.appendChild(bubble);
+    chatArea.appendChild(wrapper);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    return { wrapper, bubble, typed };
+  }
+
+  function typeBotText(targetEl, fullText, speed = 18) {
+    return new Promise((resolve) => {
+      let i = 0;
+      function step() {
+        targetEl.textContent = fullText.slice(0, i);
+        i++;
+        chatArea.scrollTop = chatArea.scrollHeight;
+        if (i <= fullText.length) setTimeout(step, speed);
+        else resolve();
+      }
+      step();
+    });
+  }
+
+  async function callBackend(text) {
+    const res = await fetch(`${API_BASE}/api/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${t}`);
+    }
+    return await res.json();
+  }
+
+  async function sendMessage(textOverride) {
+    const text = (typeof textOverride === "string") ? textOverride.trim() : (input.value || "").trim();
+    if (!text) return;
+
+    if (typeof textOverride !== "string") input.value = "";
+
+    addMessageBubble("user", text);
+
+    let payload;
+    try {
+      payload = await callBackend(text);
+    } catch (e) {
+      console.error("API error:", e);
+      addMessageBubble("bot", "Backend is not responding. Make sure Flask is running.");
+      return;
+    }
+
+    const replyText = payload?.text || "I'm not sure I understand — could you try asking in a different way?";
+    const imgUrl = payload?.image_url || null;
+    const sugg = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+
+    const bot = addMessageBubble("bot", "");
+    await typeBotText(bot.typed, replyText, 16);
+
+    // image (ensure correct host/port)
+    if (imgUrl) {
+      const fullImgUrl = imgUrl.startsWith("http") ? imgUrl : `${API_BASE}${imgUrl}`;
+      const img = document.createElement("img");
+      img.className = "map-image";
+      img.src = fullImgUrl;
+      img.alt = "Map";
+      bot.bubble.appendChild(img);
+    }
+
+    renderSuggestions(sugg);
+  }
+
+  sendBtn.addEventListener("click", () => sendMessage());
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
   });
-}
 
-async function callBackend(text) {
-  const res = await fetch(`${API_BASE}/api/respond`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text })
-  });
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} ${t}`);
-  }
-
-  return await res.json();
-}
-
-async function sendMessage(textOverride) {
-  const text = (typeof textOverride === "string")
-    ? textOverride.trim()
-    : (input.value || "").trim();
-
-  if (!text) return;
-
-  if (typeof textOverride !== "string") input.value = "";
-  appendBubble("user", text);
-
-  let data;
-  try {
-    data = await callBackend(text);
-  } catch (e) {
-    console.error("API error:", e);
-    appendBubble("bot", "Backend is not responding. Make sure Flask is running.");
-    return;
-  }
-
-  const reply = (data && data.text) ? data.text : "I'm not sure I understand — could you try asking in a different way?";
-  const imgUrl = (data && data.image_url) ? data.image_url : null;
-  const sugg = (data && Array.isArray(data.suggestions)) ? data.suggestions : [];
-
-  const botBubble = appendBubble("bot", reply);
-
-  if (imgUrl) {
-    const fullImgUrl = imgUrl.startsWith("http") ? imgUrl : `${API_BASE}${imgUrl}`;
-    const img = document.createElement("img");
-    img.src = fullImgUrl;
-    img.alt = "Map";
-    img.className = "map-image";
-    botBubble.appendChild(document.createElement("br"));
-    botBubble.appendChild(img);
-  }
-
-  renderSuggestions(sugg);
-}
-
-sendBtn.addEventListener("click", () => sendMessage());
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
-});
-
-// AUTO-SEND the message coming from index.html
-(function autoSendFromIndex() {
-  const initial = sessionStorage.getItem("slam_initial_message");
-  if (initial) {
-    sessionStorage.removeItem("slam_initial_message");
-    sendMessage(initial);
-  }
-})();
+  // Auto-send message passed from index.html
+  (function autoSendFromIndex() {
+    const initial = sessionStorage.getItem("slam_initial_message");
+    if (initial) {
+      sessionStorage.removeItem("slam_initial_message");
+      sendMessage(initial);
+    }
+  })();
 </script>
 </body>
 </html>
