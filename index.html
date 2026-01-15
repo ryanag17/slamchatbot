@@ -25,13 +25,9 @@
 
     <script>
         function goToChatWithMessage(msg) {
-            const text = (msg || "").trim();
-            if (!text) return;
-
-            // Store ONLY the initial message in sessionStorage (not in URL)
-            sessionStorage.setItem("slam_initial_message", text);
-
-            // Go to chat.html WITHOUT query params
+            const clean = (msg || "").trim();
+            if (!clean) return;
+            sessionStorage.setItem("slam_initial_message", clean);
             window.location.href = "chat.html";
         }
 

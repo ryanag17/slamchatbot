@@ -155,3 +155,14 @@ h1 { font-size: 24px; margin: 0; }
     #user-input, #user-message-input { width: 60%; }
     .message-bubble { max-width: 82%; }
 }
+/* Map rendering (canvas) */
+.map-wrap {
+    margin-top: 10px;
+}
+
+.map-canvas {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 10px;
+    display: block;
+}
