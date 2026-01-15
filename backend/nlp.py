@@ -46,6 +46,9 @@ MAP_LOCATIONS = _load_json_first_existing(_json_candidates("map_locations.json")
 _NLP = spacy.load("en_core_web_sm")
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
+BOT_NAME = "SLAM Chatbot"
+
+
 # -------------------------
 # Indexes
 # -------------------------
@@ -140,6 +143,14 @@ def _extract_after_by(norm: str) -> Optional[str]:
     return None
 
 
+def _format_list(items: List[str], max_items: int = 8) -> str:
+    if not items:
+        return ""
+    if len(items) <= max_items:
+        return ", ".join(items)
+    return ", ".join(items[:max_items]) + f", and {len(items) - max_items} more"
+
+
 # -------------------------
 # Translation
 # -------------------------
@@ -212,7 +223,40 @@ def _translate_out(text: str, target_lang: Optional[str]) -> str:
 
 
 # -------------------------
-# Museum info (FIXED: no substring "tel" bug)
+# Small talk / general
+# -------------------------
+def _smalltalk_answer(norm: str) -> Optional[str]:
+    # Hello / greetings
+    if re.match(r"^(hi|hello|hey|yo|hiya|greetings)\b", norm):
+        return "Hello! How can I help you today?"
+
+    # How are you
+    if re.search(r"\bhow are you\b|\bhow r you\b|\bhow's it going\b|\bhow is it going\b", norm):
+        return "I’m doing well! What can I help you with at the museum?"
+
+    # Name
+    if re.search(r"\b(what is your name|what's your name|who are you|what are you called)\b", norm):
+        return f"I’m {BOT_NAME}. Ask me about exhibitions, artworks, artists, or where galleries are!"
+
+    # Thanks
+    if re.search(r"\b(thanks|thank you|thx)\b", norm):
+        return "You’re welcome! Want to ask about an exhibition, an artwork, or where something is located?"
+
+    # Help / capabilities
+    if re.search(r"\b(help|what can you do|how do i use this|commands)\b", norm):
+        return (
+            "I can help with:\n"
+            "- Current exhibitions (and details/dates)\n"
+            "- Artwork info (title/artist/medium/location)\n"
+            "- Finding galleries or collection areas on a map\n"
+            "- Museum hours, location, parking"
+        )
+
+    return None
+
+
+# -------------------------
+# Museum info (no 'tel' substring bug)
 # -------------------------
 def _resolve_relative_day(norm: str) -> Optional[str]:
     if re.search(r"\btoday\b", norm):
@@ -239,14 +283,16 @@ def _hours_for_day(day: str) -> Optional[str]:
 
 def _museum_info_answer(norm: str) -> Optional[str]:
     # Location/address
-    if re.search(r"\b(address|located|location)\b", norm) and re.search(r"\bmuseum\b", norm):
+    if re.search(r"\b(address|located|location)\b", norm) and re.search(r"\bmuseum\b|\bslam\b", norm):
         loc = MUSEUM_INFO.get("location")
         if loc:
             return f"We are located at {loc}."
         return "I don’t have the museum address available right now."
 
-    # Phone — ONLY explicit phone intent (word-boundaries; no "tel" substring)
-    if re.search(r"\b(phone|telephone)\b", norm) or re.search(r"\bphone number\b", norm) or re.search(r"\bcall\b", norm) and re.search(r"\bmuseum\b", norm):
+    # Phone — ONLY explicit phone intent
+    if re.search(r"\b(phone|telephone)\b", norm) or re.search(r"\bphone number\b", norm) or (
+        re.search(r"\bcall\b", norm) and re.search(r"\bmuseum\b|\bslam\b", norm)
+    ):
         phone = MUSEUM_INFO.get("phone_number")
         if phone:
             return f"You can call the museum at {phone}."
@@ -274,7 +320,7 @@ def _museum_info_answer(norm: str) -> Optional[str]:
         if parking:
             return parking
 
-    # Museum description (only if explicitly about museum)
+    # General museum description
     if re.search(r"\b(about|description|info)\b", norm) and re.search(r"\bmuseum\b|\bslam\b", norm):
         desc = MUSEUM_INFO.get("description") or MUSEUM_INFO.get("location_description")
         if desc:
@@ -306,12 +352,12 @@ def _format_exhibition(ex: Dict[str, Any]) -> str:
 
 def _exhibitions_answer(norm: str) -> Optional[str]:
     # list on view
-    if re.search(r"\b(on view|currently on view|current exhibitions|currently on display|on display)\b", norm):
+    if re.search(r"\b(on view|currently on view|current exhibitions|currently on display|on display|what's on view|whats on view)\b", norm):
         on_view = [e for e in EXHIBITIONS if e.get("on_view") is True]
         if not on_view:
             return "No exhibitions are currently on view."
-        names = ", ".join([e.get("name", "Untitled") for e in on_view])
-        return f"Exhibitions currently on view: {names}."
+        names = [e.get("name", "Untitled") for e in on_view]
+        return "Exhibitions currently on view: " + ", ".join(names) + "."
 
     # by EXH id
     m = re.search(r"\bEXH\d{3}\b", norm.upper())
@@ -324,7 +370,6 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
         return None
 
     subj = _extract_subject(norm) or norm
-
     best = process.extractOne(subj, _EXH_NAMES, scorer=fuzz.WRatio)
     if not best:
         return None
@@ -333,7 +378,7 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
     overlap = _token_overlap_score(subj, name)
 
     intent = re.search(r"\b(exhibition|exhibit|show|on view|on display|runs|dates|until|start date|end date)\b", norm) is not None
-    # Accept stronger match when "tell me about ..." even if they didn't say "exhibition"
+
     if (score >= 80 and overlap >= 0.35) or (intent and score >= 70 and overlap >= 0.25):
         ex = _EXH_NAME_TO_OBJ.get(name)
         if ex:
@@ -384,6 +429,7 @@ def _artist_list_works(artist: str) -> str:
         gallery = p.get("gallery", "N/A")
         suffix = " (on view)" if p.get("on_view") is True else ""
         lines.append(f"- {title} — gallery {gallery}{suffix}")
+
     return f"Works by {artist}:\n" + "\n".join(lines)
 
 
@@ -404,7 +450,7 @@ def _art_answer(norm: str) -> Optional[str]:
             if best_artist and best_artist[1] >= 82:
                 return _artist_list_works(best_artist[0])
 
-    # artwork title match (improved: use subject if present)
+    # artwork title match (use subject if present)
     if not _ART_TITLES:
         return None
 
@@ -426,13 +472,50 @@ def _art_answer(norm: str) -> Optional[str]:
 
 
 # -------------------------
-# Category matching + map display for category (floor image only)
+# Recommendations ("must see")
+# -------------------------
+def _pick_random_art(filter_fn=None) -> Optional[Dict[str, Any]]:
+    pool = SLAM_ART
+    if filter_fn:
+        pool = [a for a in SLAM_ART if filter_fn(a)]
+    if not pool:
+        return None
+    return random.choice(pool)
+
+
+def _must_see_answer(norm: str) -> Optional[str]:
+    if not re.search(r"\b(must see|must-see|recommend|recommendation|suggest|highlight)\b", norm):
+        return None
+
+    # If they mention a category, use category->gallery mapping to filter artworks by gallery
+    if _CATEGORIES:
+        best = process.extractOne(norm, _CATEGORIES, scorer=fuzz.WRatio)
+        if best:
+            cat, score = best[0], best[1]
+            if score >= 78 or _token_overlap_score(norm, cat) >= 0.45:
+                galleries = []
+                for c, _, nums in _CATEGORY_ENTRIES:
+                    if c == cat:
+                        galleries.extend(nums)
+                galleries = list({g.upper().strip() for g in galleries})
+                pick = _pick_random_art(lambda a: str(a.get("gallery", "")).upper().strip() in galleries)
+                if pick:
+                    return f"A must-see in {cat}: " + _format_artwork(pick)
+
+    pick = _pick_random_art(lambda a: a.get("on_view") is True) or _pick_random_art()
+    if pick:
+        return "Here’s a must-see artwork: " + _format_artwork(pick)
+    return None
+
+
+# -------------------------
+# Category matching + maps
 # -------------------------
 def _best_category(norm: str) -> Optional[str]:
     if not _CATEGORIES:
         return None
 
-    # hard filters if user includes strong tokens
+    # Prefer strict filters when user includes strong words
     filters = []
     if "native" in norm:
         filters.append("native")
@@ -449,7 +532,7 @@ def _best_category(norm: str) -> Optional[str]:
         if filtered:
             candidates = filtered
 
-    # exact-ish contains wins
+    # direct contains check
     for c in candidates:
         c_norm = _normalize(c)
         if c_norm and re.search(rf"\b{re.escape(c_norm)}\b", norm):
@@ -483,8 +566,9 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
         floor_map.setdefault(floor, [])
         floor_map[floor].extend(nums)
 
-    parts = []
     floors_sorted = sorted(floor_map.keys(), key=lambda x: int(re.sub(r"\D", "", x) or "0"))
+
+    parts = []
     for floor in floors_sorted:
         uniq = []
         seen = set()
@@ -496,7 +580,7 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
 
     text = f"{cat} is located on " + " and ".join(parts) + "."
 
-    # If all galleries on one floor, show that floor map image
+    # If one floor, show floor map (NOT dotted map)
     image_url = None
     if len(floors_sorted) == 1:
         image_url = f"/backend/static/floor{floors_sorted[0]}.png"
@@ -505,12 +589,12 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
 
 
 def _map_answer(norm: str) -> Optional[Dict[str, Any]]:
-    # 1) category location → floor image only (no dots)
+    # category first
     cat_payload = _category_location_payload(norm)
     if cat_payload:
         return cat_payload
 
-    # 2) gallery number → dotted map image
+    # gallery number -> dotted map
     token = _extract_gallery_token(norm)
     if token and re.search(r"\b(where|located|find|map|gallery|room|rm)\b", norm):
         img_payload = get_gallery_map_image(token, MAP_LOCATIONS)
@@ -534,6 +618,7 @@ _SUGGESTION_TEMPLATES = [
     "Where is {category}?",
     "Where is gallery 216?",
     "What are the museum hours today?",
+    "What’s your name?",
 ]
 
 
@@ -548,7 +633,10 @@ def _make_suggestions(orig_lang: Optional[str]) -> List[str]:
     artist_pick = random.choice(artists) if artists else "Hannah Brown Skeele"
     exh_pick = random.choice(exh_names) if exh_names else "a current exhibition"
 
-    candidates = [t.format(category=cat_pick, art_title=art_pick, artist=artist_pick, exh_name=exh_pick) for t in _SUGGESTION_TEMPLATES]
+    candidates = [
+        t.format(category=cat_pick, art_title=art_pick, artist=artist_pick, exh_name=exh_pick)
+        for t in _SUGGESTION_TEMPLATES
+    ]
     random.shuffle(candidates)
 
     picks = []
@@ -568,7 +656,17 @@ def generate_response(user_text: str) -> Dict[str, Any]:
     en_text, orig_lang = _translate_in(user_text)
     norm = _normalize(en_text)
 
-    # 1) maps (category first, then gallery)
+    # 0) small talk
+    st = _smalltalk_answer(norm)
+    if st:
+        return {"text": _translate_out(st, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
+
+    # 1) recommendations
+    must = _must_see_answer(norm)
+    if must:
+        return {"text": _translate_out(must, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
+
+    # 2) maps
     map_payload = _map_answer(norm)
     if map_payload:
         return {
@@ -577,17 +675,17 @@ def generate_response(user_text: str) -> Dict[str, Any]:
             "suggestions": _make_suggestions(orig_lang),
         }
 
-    # 2) exhibitions (strong)
+    # 3) exhibitions
     ex = _exhibitions_answer(norm)
     if ex:
         return {"text": _translate_out(ex, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
 
-    # 3) art (titles + artists)
+    # 4) art
     art = _art_answer(norm)
     if art:
         return {"text": _translate_out(art, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
 
-    # 4) museum info (FIXED: no more "tel" bug)
+    # 5) museum info
     mus = _museum_info_answer(norm)
     if mus:
         return {"text": _translate_out(mus, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
