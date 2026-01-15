@@ -150,6 +150,11 @@ function capitalize(str) {
     return str ? str[0].toUpperCase() + str.slice(1) : str;
 }
 
+function isLocationQuestion(s) {
+    // location intent words
+    return /\b(where|located|find|location|map|directions)\b/.test(s);
+}
+
 /* =========================================================
    CORE ROUTER
    ========================================================= */
@@ -167,11 +172,12 @@ function processInput(rawInput) {
         return "Hello there! How may I help you today?";
     }
 
+    // ✅ IMPORTANT: map handler BEFORE art handler (prevents wrong intent)
     return (
         handleMuseumInfo(s) ||
         handleExhibitions(s) ||
+        handleMapLocations(s) ||   // ✅ moved up
         handleSlamArt(s) ||
-        handleMapLocations(s) ||
         handleGeneric(s) ||
         "I'm not sure I understand — could you try asking in a different way?"
     );
@@ -228,12 +234,52 @@ function handleSlamArt(s) {
 }
 
 function handleMapLocations(s) {
+    // ✅ 1) Handle “where is gallery 219” (or “gallery 219”) using mapLocationsData directly
+    const galleryMatch = s.match(/\bgallery\s*([0-9]{1,3}[a-z]?)\b/);
+    const bareNumberMatch = !galleryMatch ? s.match(/\b([0-9]{3}[a-z]?)\b/) : null;
+
+    const candidateNum = galleryMatch ? galleryMatch[1] : (bareNumberMatch ? bareNumberMatch[1] : null);
+
+    if (candidateNum && isLocationQuestion(s)) {
+        const target = String(candidateNum).toUpperCase();
+
+        // Search through floors and their galleries
+        for (const floor of mapLocationsData || []) {
+            // galleries list
+            for (const g of (floor.galleries || [])) {
+                const nums = (g.numbers || []).map(x => String(x).toUpperCase());
+                if (nums.includes(target)) {
+                    return `Gallery ${target} is on floor ${floor.floor} in the ${g.category} section.`;
+                }
+            }
+
+            // stairs/elevators/coat checks
+            for (const key of ["stairs", "elevators", "coat_checks"]) {
+                const arr = (floor[key] || []).map(x => String(x).toUpperCase());
+                if (arr.includes(target)) {
+                    return `${capitalize(key.replace("_", " "))} ${target} is on floor ${floor.floor}.`;
+                }
+            }
+
+            // restrooms: location field
+            for (const rr of (floor.restrooms || [])) {
+                if (String(rr.location || "").toUpperCase() === target) {
+                    return `A ${rr.type} restroom is near ${target} on floor ${floor.floor}.`;
+                }
+            }
+        }
+        // If number exists but not found
+        return `I couldn't find gallery ${target} in the map data.`;
+    }
+
+    // ✅ 2) Category fuzzy search (European Art, Ancient Art, etc.)
     if (!fuseMapCategories) return null;
     const r = fuseMapCategories.search(s);
     if (r.length && r[0].score < 0.6) {
         const f = r[0].item;
         return `${f.category} is on floor ${f.floor}, galleries ${f.numbers.join(", ")}.`;
     }
+
     return null;
 }
 

@@ -42,6 +42,7 @@ h1 { font-size: 24px; margin: 0; }
 #welcome-container h2 { font-size: 32px; color: #2C3E50; }
 #welcome-container p { font-size: 18px; color: #7F8C8D; margin: 20px 0; }
 #input-container { display:flex; justify-content:center; gap:15px; margin-top:20px; }
+
 #user-input, #user-message-input {
     width: 70%;
     padding: 12px;
@@ -51,6 +52,7 @@ h1 { font-size: 24px; margin: 0; }
     transition: border 0.2s ease-in-out;
 }
 #user-input:focus, #user-message-input:focus { outline:none; border-color:#3498db; }
+
 #send-btn, #send-message-btn {
     padding: 12px 20px;
     font-size: 16px;
@@ -137,6 +139,15 @@ h1 { font-size: 24px; margin: 0; }
 .typing-dots {
     font-size: 18px;
     opacity: 0.85;
+}
+
+/* ✅ NEW: map image inside chat bubbles */
+.map-image {
+    display: block;
+    margin-top: 10px;
+    max-width: 100%;
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.35);
 }
 
 @media (max-width: 600px) {

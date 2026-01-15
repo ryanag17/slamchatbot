@@ -9,29 +9,28 @@
 <body>
 <div id="chat-container">
 
-<header>
-    <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
-    <h1>SLAM Chatbot</h1>
-</header>
+    <header>
+        <img src="SLAM_Logo.png" alt="SLAM Logo" id="logo">
+        <h1>SLAM Chatbot</h1>
+    </header>
 
-<div id="messages-container">
-    <div id="chat-area" aria-live="polite" role="log"></div>
+    <div id="messages-container">
+        <div id="chat-area" aria-live="polite" role="log"></div>
+    </div>
+
+    <div id="message-input-container">
+        <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
+        <button id="send-message-btn">Send</button>
+    </div>
+
 </div>
 
-<div id="message-input-container">
-    <input type="text" id="user-message-input" placeholder="Ask me another question..." autocomplete="off" />
-    <button id="send-message-btn">Send</button>
-</div>
-
-</div>
-
-<!-- LIBS (unchanged) -->
 <script src="https://unpkg.com/compromise@13.11.3/builds/compromise.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
 <script src="https://unpkg.com/dayjs@1.11.9/dayjs.min.js"></script>
 <script src="https://unpkg.com/dayjs@1.11.9/plugin/weekday.js"></script>
 <script>
-dayjs.extend(dayjs_plugin_weekday);
+  dayjs.extend(dayjs_plugin_weekday);
 </script>
 
 <script src="backend/chatbot.js"></script>
@@ -41,10 +40,9 @@ const chatArea = document.getElementById('chat-area');
 const sendBtn = document.getElementById('send-message-btn');
 const inputEl = document.getElementById('user-message-input');
 
-const STORAGE_KEY = "slam_chat_history";
-const EXPIRE_MS = 24 * 60 * 60 * 1000;
+const STORAGE_KEY = "slam_chat_history_v1";
+const STORAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-/* ---------------- TIMESTAMP ---------------- */
 function formatTimestamp(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
@@ -52,125 +50,232 @@ function formatTimestamp(date = new Date()) {
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
+    hours = hours % 12;
+    hours = hours ? hours : 12;
     return `${mm}/${dd}/${yyyy}, ${hours}:${minutes} ${ampm}`;
 }
 
-/* ---------------- STORAGE ---------------- */
 function loadHistory() {
     try {
-        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (!raw) return [];
-        if (Date.now() - raw.savedAt > EXPIRE_MS) {
-            localStorage.removeItem(STORAGE_KEY);
-            return [];
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { createdAt: Date.now(), messages: [] };
+
+        const parsed = JSON.parse(raw);
+        if (!parsed.createdAt || !Array.isArray(parsed.messages)) {
+            return { createdAt: Date.now(), messages: [] };
         }
-        return raw.messages || [];
-    } catch {
-        return [];
+
+        // Expire after 24 hours
+        if (Date.now() - parsed.createdAt > STORAGE_TTL_MS) {
+            localStorage.removeItem(STORAGE_KEY);
+            return { createdAt: Date.now(), messages: [] };
+        }
+
+        return parsed;
+    } catch (e) {
+        return { createdAt: Date.now(), messages: [] };
     }
 }
 
-function saveHistory(messages) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        savedAt: Date.now(),
-        messages
-    }));
+function saveHistory(history) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {}
 }
 
-/* ---------------- UI ---------------- */
-function appendMessage(sender, text) {
-    const wrap = document.createElement('div');
-    wrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+let historyState = loadHistory();
+
+function ensureDataLoaded(callback) {
+    if (window.__museumLoaded) return callback();
+    const check = setInterval(() => {
+        if (window.__museumLoaded) {
+            clearInterval(check);
+            callback();
+        }
+    }, 50);
+}
+
+function appendMessage(sender, text, opts = {}) {
+    const { isTypingPlaceholder = false, imageUrl = null, timestampOverride = null } = opts;
+
+    const msgWrap = document.createElement('div');
+    msgWrap.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble ' + (sender === 'user' ? 'user-bubble' : 'bot-bubble');
 
-    const textDiv = document.createElement('div');
-    textDiv.textContent = text;
-    bubble.appendChild(textDiv);
+    if (isTypingPlaceholder) {
+        const dots = document.createElement('span');
+        dots.className = 'typing-dots';
+        dots.textContent = '· · ·';
+        bubble.appendChild(dots);
+    } else {
+        if (text) {
+            const textDiv = document.createElement('div');
+            textDiv.textContent = text;
+            bubble.appendChild(textDiv);
+        }
 
-    const ts = document.createElement('div');
-    ts.className = 'timestamp';
-    ts.textContent = formatTimestamp();
-    bubble.appendChild(ts);
+        if (imageUrl) {
+            const img = document.createElement('img');
+            img.className = 'map-image';
+            img.src = imageUrl;
+            img.alt = 'Map';
+            bubble.appendChild(img);
+        }
 
-    wrap.appendChild(bubble);
-    chatArea.appendChild(wrap);
+        const timestamp = document.createElement('div');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = timestampOverride || formatTimestamp();
+        bubble.appendChild(timestamp);
+    }
+
+    msgWrap.appendChild(bubble);
+    chatArea.appendChild(msgWrap);
     chatArea.scrollTop = chatArea.scrollHeight;
+
+    return { msgWrap, bubble };
 }
 
-function typeBotReply(text) {
-    const wrap = document.createElement('div');
-    wrap.className = 'chat-message bot-message';
+function typeBotReply(text, typingSpeed = 35, after = null) {
+    const { bubble } = appendMessage('bot', '', { isTypingPlaceholder: true });
 
-    const bubble = document.createElement('div');
-    bubble.className = 'message-bubble bot-bubble';
-
-    const typed = document.createElement('div');
-    typed.className = 'typed-text';
-    bubble.appendChild(typed);
-
-    wrap.appendChild(bubble);
-    chatArea.appendChild(wrap);
+    bubble.innerHTML = '';
+    const typedDiv = document.createElement('div');
+    typedDiv.className = 'typed-text';
+    bubble.appendChild(typedDiv);
 
     let i = 0;
     function step() {
         if (i < text.length) {
-            typed.textContent += text.charAt(i++);
+            typedDiv.textContent += text.charAt(i);
+            i++;
             chatArea.scrollTop = chatArea.scrollHeight;
-            setTimeout(step, 35);
+            setTimeout(step, typingSpeed);
         } else {
-            const ts = document.createElement('div');
-            ts.className = 'timestamp';
-            ts.textContent = formatTimestamp();
-            bubble.appendChild(ts);
+            if (typeof after === "function") after(bubble);
+
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = formatTimestamp();
+            bubble.appendChild(timestamp);
+            chatArea.scrollTop = chatArea.scrollHeight;
         }
     }
     step();
 }
 
-/* ---------------- LOGIC ---------------- */
-function handleUserMessage(text) {
-    appendMessage('user', text);
+// -------------------- Python backend call --------------------
+async function callPythonBackend(userText) {
+    // If backend not running, this will fail and we fallback to JS.
+    const res = await fetch("/api/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: userText })
+    });
 
-    ensureDataLoaded(() => {
-        const reply = typeof processInput === 'function'
-            ? processInput(text)
-            : "Sorry — I'm not ready yet.";
+    if (!res.ok) throw new Error("Backend error");
 
-        setTimeout(() => typeBotReply(reply), 300);
+    const data = await res.json();
+    // expected:
+    // { text: "...", image_url: "/backend/static/generated/gallery_219.png" | null, used_translation: true/false }
+    return data;
+}
 
-        history.push({ sender: "user", text });
-        history.push({ sender: "bot", text: reply });
-        saveHistory(history);
+// -------------------- JS fallback --------------------
+function callJsFallback(userText) {
+    return new Promise((resolve) => {
+        ensureDataLoaded(() => {
+            const reply = (typeof processInput === 'function')
+                ? processInput(userText || '')
+                : "Sorry — I'm not ready to answer yet.";
+            resolve({ text: reply, image_url: null, used_translation: false });
+        });
     });
 }
 
-/* ---------------- INIT ---------------- */
-let history = loadHistory();
+async function showUserThenBot(userText) {
+    const userTs = formatTimestamp();
+    appendMessage('user', userText, { timestampOverride: userTs });
 
-// restore chat
-history.forEach(m => appendMessage(m.sender, m.text));
+    historyState.messages.push({ sender: "user", text: userText, ts: Date.now() });
+    saveHistory(historyState);
 
-// initial message from index.html
-const first = localStorage.getItem("slam_initial_message");
-if (first) {
-    localStorage.removeItem("slam_initial_message");
-    handleUserMessage(first);
+    let payload = null;
+
+    try {
+        payload = await callPythonBackend(userText);
+    } catch (e) {
+        payload = await callJsFallback(userText);
+    }
+
+    const replyText = payload?.text || "I'm not sure I understand — could you try asking in a different way?";
+    const imgUrl = payload?.image_url || null;
+
+    // typed reply + (optional) image after typing
+    typeBotReply(replyText, 35, (bubble) => {
+        if (imgUrl) {
+            const img = document.createElement("img");
+            img.className = "map-image";
+            img.src = imgUrl;
+            img.alt = "Map";
+            bubble.appendChild(img);
+        }
+    });
+
+    historyState.messages.push({ sender: "bot", text: replyText, image_url: imgUrl, ts: Date.now() });
+    saveHistory(historyState);
 }
 
-/* ---------------- EVENTS ---------------- */
+// -------------------- restore chat on refresh --------------------
+function renderHistory() {
+    chatArea.innerHTML = "";
+    for (const m of historyState.messages) {
+        const ts = formatTimestamp(new Date(m.ts || Date.now()));
+        appendMessage(m.sender === "user" ? "user" : "bot", m.text || "", {
+            imageUrl: m.image_url || null,
+            timestampOverride: ts
+        });
+    }
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
 function sendFromInput() {
     const text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
-    handleUserMessage(text);
+    showUserThenBot(text);
+    inputEl.focus();
 }
 
 sendBtn.addEventListener('click', sendFromInput);
-inputEl.addEventListener('keydown', e => {
+inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendFromInput();
+});
+
+// -------------------- initial message handling --------------------
+window.addEventListener('load', () => {
+    // If URL ever has ?message=... from old versions, strip it immediately:
+    if (window.location.search && window.location.search.includes("message=")) {
+        const url = new URL(window.location.href);
+        const msg = url.searchParams.get("message");
+        history.replaceState({}, "", "chat.html");
+        if (msg) {
+            renderHistory();
+            showUserThenBot(msg);
+            return;
+        }
+    }
+
+    // normal: load chat history first
+    renderHistory();
+
+    // initial message from index.html via sessionStorage
+    const initial = sessionStorage.getItem("slam_initial_message");
+    if (initial) {
+        sessionStorage.removeItem("slam_initial_message");
+        showUserThenBot(initial);
+    }
 });
 </script>
 
