@@ -37,15 +37,11 @@ def _json_candidates(filename: str) -> List[str]:
     """
     candidates = [
         os.path.join(DATA_DIR, filename),
-
         os.path.join(BASE_DIR, filename),
-
         os.path.join(PROJECT_ROOT, filename),
-
         os.path.join(PROJECT_ROOT, "backend", filename),
         os.path.join(PROJECT_ROOT, "backend", "data", filename),
         os.path.join(PROJECT_ROOT, "data", filename),
-
         os.path.abspath(os.path.join(os.getcwd(), filename)),
         os.path.abspath(os.path.join(os.getcwd(), "backend", filename)),
         os.path.abspath(os.path.join(os.getcwd(), "backend", "data", filename)),
@@ -77,21 +73,44 @@ BOT_NAME = "SLAM Chatbot"
 
 
 # -------------------------
+# Robust key getter (fixes Artist vs artist, Title vs title, etc.)
+# -------------------------
+def _get_any(a: Dict[str, Any], *keys: str, default=None):
+    """Return the first matching key from a dict, trying multiple possible key spellings."""
+    if not isinstance(a, dict):
+        return default
+    for k in keys:
+        if k in a and a.get(k) not in (None, ""):
+            return a.get(k)
+    return default
+
+
+# -------------------------
 # Indexes
 # -------------------------
 _EXH_BY_ID = {str((e.get("id") or "")).upper(): e for e in EXHIBITIONS if e.get("id")}
 _EXH_NAMES = [e.get("name", "") for e in EXHIBITIONS if e.get("name")]
 _EXH_NAME_TO_OBJ = {e.get("name", ""): e for e in EXHIBITIONS if e.get("name")}
 
-_ART_TITLES = [a.get("title", "") for a in SLAM_ART if a.get("title")]
-_ART_TITLE_TO_OBJ = {a.get("title", ""): a for a in SLAM_ART if a.get("title")}
-
-_ARTISTS = sorted({(a.get("artist") or "").strip() for a in SLAM_ART if (a.get("artist") or "").strip()})
+# Artwork / artist indexes (ROBUST to JSON key casing)
+_ART_TITLES: List[str] = []
+_ART_TITLE_TO_OBJ: Dict[str, Dict[str, Any]] = {}
+_ARTISTS_SET = set()
 _ARTIST_TO_PIECES: Dict[str, List[Dict[str, Any]]] = {}
+
 for a in SLAM_ART:
-    artist = (a.get("artist") or "").strip()
+    title = (_get_any(a, "title", "Title") or "").strip()
+    artist = (_get_any(a, "artist", "Artist") or "").strip()
+
+    if title:
+        _ART_TITLES.append(title)
+        _ART_TITLE_TO_OBJ[title] = a
+
     if artist:
+        _ARTISTS_SET.add(artist)
         _ARTIST_TO_PIECES.setdefault(artist.lower(), []).append(a)
+
+_ARTISTS = sorted(_ARTISTS_SET)
 
 # categories from map_locations
 _CATEGORY_ENTRIES = []  # (category, floor, numbers_str_list)
@@ -418,17 +437,19 @@ def _exhibitions_answer(norm: str) -> Optional[str]:
 # Artworks + artists
 # -------------------------
 def _format_artwork(a: Dict[str, Any]) -> str:
-    title = a.get("title", "Untitled")
-    artist = a.get("artist") or "Unknown"
-    date = a.get("date") or "N/A"
-    gallery = a.get("gallery") or "N/A"
-    desc = (a.get("description") or "").strip() or "No description available."
+    # Robust key access (supports Title/Artist/etc.)
+    title = _get_any(a, "title", "Title", default="Untitled")
+    artist = _get_any(a, "artist", "Artist", default="Unknown")
+    date = _get_any(a, "date", "Date", default="N/A")
+    gallery = _get_any(a, "gallery", "Gallery", default="N/A")
 
-    medium = a.get("medium")
-    made_in = a.get("made_in")
-    culture = a.get("culture")
-    collection = a.get("collection")
-    on_view = a.get("on_view")
+    desc = (_get_any(a, "description", "Description") or "").strip() or "No description available."
+
+    medium = _get_any(a, "medium", "Medium")
+    made_in = _get_any(a, "made_in", "Made_in", "Made In", "madeIn", "MadeIn")
+    culture = _get_any(a, "culture", "Culture")
+    collection = _get_any(a, "collection", "Collection")
+    on_view = _get_any(a, "on_view", "On_view", "On View", "onView")
 
     lines = []
     lines.append(f"{title}")
@@ -448,7 +469,7 @@ def _format_artwork(a: Dict[str, Any]) -> str:
     if isinstance(on_view, bool):
         lines.append("On view: Yes" if on_view else "On view: No")
 
-    lines.append("")  
+    lines.append("")  # blank line
     lines.append("Description:")
     lines.append(desc)
 
@@ -460,12 +481,21 @@ def _artist_list_works(artist: str) -> str:
     if not pieces:
         return f"I couldn't find any works by {artist}."
 
-    pieces_sorted = sorted(pieces, key=lambda x: (not bool(x.get("on_view")), (x.get("title") or "")))
+    def _title(p):
+        return (_get_any(p, "title", "Title", default="Untitled") or "Untitled")
+
+    def _gallery(p):
+        return (_get_any(p, "gallery", "Gallery", default="N/A") or "N/A")
+
+    def _on_view(p):
+        return _get_any(p, "on_view", "On View", "On_view", "onView")
+
+    pieces_sorted = sorted(pieces, key=lambda x: (not bool(_on_view(x)), _title(x)))
     lines = []
     for p in pieces_sorted:
-        title = p.get("title", "Untitled")
-        gallery = p.get("gallery", "N/A")
-        suffix = " (on view)" if p.get("on_view") is True else ""
+        title = _title(p)
+        gallery = _gallery(p)
+        suffix = " (on view)" if _on_view(p) is True else ""
         lines.append(f"- {title} — gallery {gallery}{suffix}")
 
     return f"Works by {artist}:\n" + "\n".join(lines)
@@ -536,11 +566,11 @@ def _must_see_answer(norm: str) -> Optional[str]:
                     if c == cat:
                         galleries.extend(nums)
                 galleries = list({g.upper().strip() for g in galleries})
-                pick = _pick_random_art(lambda a: str(a.get("gallery", "")).upper().strip() in galleries)
+                pick = _pick_random_art(lambda a: str(_get_any(a, "gallery", "Gallery", default="")).upper().strip() in galleries)
                 if pick:
                     return f"A must-see in {cat}: " + _format_artwork(pick)
 
-    pick = _pick_random_art(lambda a: a.get("on_view") is True) or _pick_random_art()
+    pick = _pick_random_art(lambda a: _get_any(a, "on_view", "On View", "onView") is True) or _pick_random_art()
     if pick:
         return "Here’s a must-see artwork: " + _format_artwork(pick)
     return None
@@ -628,7 +658,7 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
 
 
 def _map_answer(norm: str) -> Optional[Dict[str, Any]]:
-    # category first
+    # category first (text-only, no images)
     cat_payload = _category_location_payload(norm)
     if cat_payload:
         return cat_payload
@@ -669,7 +699,7 @@ def _make_suggestions(orig_lang: Optional[str]) -> List[str]:
 
     cat_pick = random.choice(categories) if categories else "American Art"
     art_pick = random.choice(art_titles) if art_titles else "View of St. Louis"
-    artist_pick = random.choice(artists) if artists else "Hannah Brown Skeele"
+    artist_pick = random.choice(artists) if artists else "Taxile Doat"
     exh_pick = random.choice(exh_names) if exh_names else "a current exhibition"
 
     candidates = [
@@ -705,7 +735,7 @@ def generate_response(user_text: str) -> Dict[str, Any]:
     if must:
         return {"text": _translate_out(must, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
 
-    # 2) maps
+    # 2) maps (gallery-number maps only)
     map_payload = _map_answer(norm)
     if map_payload:
         return {
@@ -719,7 +749,7 @@ def generate_response(user_text: str) -> Dict[str, Any]:
     if ex:
         return {"text": _translate_out(ex, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
 
-    # 4) art
+    # 4) art / artists
     art = _art_answer(norm)
     if art:
         return {"text": _translate_out(art, orig_lang), "image_url": None, "suggestions": _make_suggestions(orig_lang)}
