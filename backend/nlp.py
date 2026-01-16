@@ -396,25 +396,36 @@ def _format_artwork(a: Dict[str, Any]) -> str:
     date = a.get("date") or "N/A"
     gallery = a.get("gallery") or "N/A"
     desc = (a.get("description") or "").strip() or "No description available."
+
     medium = a.get("medium")
     made_in = a.get("made_in")
     culture = a.get("culture")
     collection = a.get("collection")
     on_view = a.get("on_view")
 
-    bits = [f"{title} by {artist} ({date}).", f"Location: gallery {gallery}."]
+    lines = []
+    lines.append(f"{title}")
+    lines.append(f"Artist: {artist}")
+    lines.append(f"Date: {date}")
+    lines.append(f"Location: Gallery {gallery}")
+
     if collection:
-        bits.append(f"Collection: {collection}.")
+        lines.append(f"Collection: {collection}")
     if medium:
-        bits.append(f"Medium: {medium}.")
+        lines.append(f"Medium: {medium}")
     if made_in:
-        bits.append(f"Made in: {made_in}.")
+        lines.append(f"Made in: {made_in}")
     if culture:
-        bits.append(f"Culture: {culture}.")
+        lines.append(f"Culture: {culture}")
+
     if isinstance(on_view, bool):
-        bits.append("Currently on view." if on_view else "Not currently on view.")
-    bits.append(desc)
-    return " ".join(bits)
+        lines.append("On view: Yes" if on_view else "On view: No")
+
+    lines.append("")  
+    lines.append("Description:")
+    lines.append(desc)
+
+    return "\n".join(lines)
 
 
 def _artist_list_works(artist: str) -> str:
@@ -550,6 +561,8 @@ def _best_category(norm: str) -> Optional[str]:
 
 
 def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
+    # Categories like "Asian Art", "Native American Art", etc. should be TEXT ONLY.
+    # Maps are only for specific gallery-number questions.
     if not re.search(r"\b(where|located|find|location)\b", norm):
         return None
 
@@ -566,7 +579,10 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
         floor_map.setdefault(floor, [])
         floor_map[floor].extend(nums)
 
-    floors_sorted = sorted(floor_map.keys(), key=lambda x: int(re.sub(r"\D", "", x) or "0"))
+    floors_sorted = sorted(
+        floor_map.keys(),
+        key=lambda x: int(re.sub(r"\D", "", x) or "0")
+    )
 
     parts = []
     for floor in floors_sorted:
@@ -580,12 +596,8 @@ def _category_location_payload(norm: str) -> Optional[Dict[str, Any]]:
 
     text = f"{cat} is located on " + " and ".join(parts) + "."
 
-    # If one floor, show floor map (NOT dotted map)
-    image_url = None
-    if len(floors_sorted) == 1:
-        image_url = f"/backend/static/floor{floors_sorted[0]}.png"
-
-    return {"text": text, "image_url": image_url}
+    # IMPORTANT: text-only for categories
+    return {"text": text, "image_url": None}
 
 
 def _map_answer(norm: str) -> Optional[Dict[str, Any]]:
