@@ -31,11 +31,38 @@ def _load_json_first_existing(candidates: List[str], default):
 
 
 def _json_candidates(filename: str) -> List[str]:
-    return [
+    """
+    Try multiple likely locations so the backend still works even if JSON files
+    are stored in the project root, /backend, /backend/data, or /data.
+    """
+    candidates = [
         os.path.join(DATA_DIR, filename),
+
         os.path.join(BASE_DIR, filename),
+
         os.path.join(PROJECT_ROOT, filename),
+
+        os.path.join(PROJECT_ROOT, "backend", filename),
+        os.path.join(PROJECT_ROOT, "backend", "data", filename),
+        os.path.join(PROJECT_ROOT, "data", filename),
+
+        os.path.abspath(os.path.join(os.getcwd(), filename)),
+        os.path.abspath(os.path.join(os.getcwd(), "backend", filename)),
+        os.path.abspath(os.path.join(os.getcwd(), "backend", "data", filename)),
+        os.path.abspath(os.path.join(os.getcwd(), "data", filename)),
     ]
+
+    env_dir = os.environ.get("SLAMCHATBOT_DATA_DIR")
+    if env_dir:
+        candidates.insert(0, os.path.join(env_dir, filename))
+
+    seen = set()
+    out = []
+    for p in candidates:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
 
 
 MUSEUM_INFO = _load_json_first_existing(_json_candidates("museum_info.json"), {})
