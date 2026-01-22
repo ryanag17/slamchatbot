@@ -1,0 +1,106 @@
+{
+  "name": "St. Louis Art Museum",
+  "founded": "1879",
+  "location": "1 Fine Arts Dr, St. Louis, MO 63110, USA",
+  "location_description": "Located in the heart of historic Forest Park, the Saint Louis Art Museum is one of the nation’s leading comprehensive art museums with collections that include works of art of exceptional quality from virtually every culture and time period.",
+  "phone_number": "314-721-0072",
+  "museum_hours": {
+    "monday": "Closed",
+    "tuesday": "10am - 5pm",
+    "wednesday": "10am - 5pm",
+    "thursday": "10am - 5pm",
+    "friday": "10am - 9pm",
+    "saturday": "10am - 5pm",
+    "sunday": "10am - 5pm",
+    "last_entry_ticketed_exhibitions": "1 hour before closing",
+    "holiday_closures": ["Thanksgiving", "Christmas"]
+  },
+  "collections_count": 37000,
+  "description": "The Saint Louis Art Museum holds a world-renowned collection of approximately 37,000 objects spanning 5,000 years of history and cultures. More than 2,700 objects are currently on view in our collection galleries.",
+  "mission": "The Saint Louis Art Museum collects, presents, interprets, and conserves works of art of the highest quality across time and cultures; educates, inspires discovery, and elevates the human spirit; preserves a legacy of artistic achievement for the people of St. Louis and the world; and engages, includes, and represents the full diversity of the St. Louis community supporting it.",
+  "history": "The Saint Louis Art Museum was founded in 1879, at the close of a decade that saw the establishment of art museums in great cities across the eastern half of the United States. What began as a collection of plaster casts and reproductions quickly became a great and varied collection of original works of art spanning five millennia and six continents.",
+  "architecture": "Opened in 1904, the Main Building was designed by the architect Cass Gilbert.",
+  "parking": {
+    "free": "Public parking is available in two lots located on the north side of Fine Arts Drive, across from the Museum. Accessible parking is available in the public lots and in the parking garage.",
+    "garage": {
+      "description": "Underground parking garage with 300 spaces, open during Museum hours (30 minutes prior to opening to 30 minutes after closing).",
+      "rates": {
+        "peak": "$15 (March–October)",
+        "off_peak": "$10 (November–February)",
+        "member": "$5"
+      }
+    },
+    "accessible": "Accessible entrances are located at the East Building and in the parking garage. An accessible drop-off area is located directly in front of the East Building."
+  },
+  "public_transport": {
+    "metrolink": [
+      {
+        "station": "Skinker Station",
+        "distance": "0.8 miles (15-minute walk)"
+      },
+      {
+        "station": "Forest Park-DeBaliviere Station",
+        "distance": "short walk north of Forest Park Parkway"
+      }
+    ],
+    "bus": "Served by the 90 (Hampton) MetroBus year-round.",
+    "trolley": "Forest Park Trolley runs between Memorial Day and Labor Day."
+  },
+  "services": {
+    "strollers": "Strollers welcome, but may be restricted in Museum Shops. Free loan available at Welcome Desks.",
+    "coat_check": "Located in Taylor Hall and Sculpture Hall. Backpacks/bags larger than 11x17 not permitted.",
+    "lost_and_found": "Located at the coat check in Taylor Hall or call 314-655-5300.",
+    "wifi": "Free public Wi-Fi available on the SLAM_Guest network."
+  },
+  "amenities": {
+    "shops": {
+      "description": "Museum Shops offer a variety of art-inspired gifts, books, and merchandise.",
+      "hours": {
+        "tuesday_sunday": "10am - 4:40pm",
+        "friday": "10am - 8:40pm"
+      }
+    },
+    "library": {
+      "name": "Richardson Memorial Library",
+      "hours": {
+        "tuesday_friday": "10am - 4:30pm"
+      }
+    },
+    "sculpture_garden": {
+      "name": "Grace Taylor Broughton Sculpture Garden",
+      "hours": "Open daily, 6am - 10pm"
+    },
+    "dining": {
+      "cafe": {
+        "description": "Quick-service cafe with lunch options, snacks, and espresso drinks.",
+        "hours": {
+          "monday": "Closed",
+          "tuesday": "10am - 4pm",
+          "wednesday": "10am - 4pm",
+          "thursday": "10am - 4pm",
+          "friday": "10am - 8pm",
+          "saturday": "10am - 4pm",
+          "sunday": "10am - 4pm"
+        },
+        "notes": "Full menu service ends 1 hour before closing. Espresso service ends 15 minutes before closing."
+      },
+      "panorama": {
+        "description": "Full-service restaurant offering dishes inspired by art and local ingredients, overlooking Forest Park. Member of the Green Dining Alliance.",
+        "hours": {
+          "monday": "Closed",
+          "tuesday": "11am - 2pm",
+          "wednesday": "11am - 2pm",
+          "thursday": "11am - 2pm",
+          "friday": "11am - 2pm",
+          "saturday": "10am - 3pm",
+          "sunday": "10am - 3pm"
+        }
+      }
+    }
+  },
+  "social_media": {
+    "instagram": "@stlartmuseum",
+    "threads": "@stlartmuseum",
+    "facebook": "https://www.facebook.com/saint.louis.art.museum"
+  }
+}
